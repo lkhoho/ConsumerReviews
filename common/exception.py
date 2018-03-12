@@ -1,0 +1,2 @@
+class UnsupportedFileFormatError(Exception):
+    pass
