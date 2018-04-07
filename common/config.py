@@ -39,10 +39,10 @@ taggerConfig = {
 
 # project config
 numExecutors = int(multiprocessing.cpu_count() / 2)
-websiteName = 'KbbDotCom'
+websiteName = 'BizrateDotCom'
 stopwordsPath = '/Users/keliu/Developer/python/ConsumerReviews/common/data/stopwords.txt'
 splittedDataPath = '/Volumes/HDD2/projects/ConsumerReviews/{}/splitData/'.format(websiteName)
-processedDataPath = '/Volumes/HDD2/projects/ConsumerReviews/{}/processData/'.format(websiteName)
+processedDataPath = '/Volumes/HDD2/projects/ConsumerReviews/{}/processData2/'.format(websiteName)
 featureSelectedDataPath = '/Volumes/HDD2/projects/ConsumerReviews/{}/featureSelectionData/'.format(websiteName)
 ############################################################################################################
 

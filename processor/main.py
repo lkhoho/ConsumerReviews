@@ -38,21 +38,21 @@ def _processHelper(fileId, filename, nTotalTasks):
         log.info('{} does not exist and will be created.'.format(config.processedDataPath))
         os.makedirs(config.processedDataPath)
     computeSentimentScoresForAllWords(datasetName + '_', lem.cleanedByVocabulary, lem.scoredByVocabulary, posneg, stopwords)
-    # computeSentimentScoresForNouns(datasetName + '_', lem.cleanedByVocabulary, lem.scoredByVocabulary, posneg, stopwords)
-    # computeSentimentScoresAfterTransformingObjectiveWords(datasetName + '_', lem.cleanedByVocabulary,
-    #                                                       lem.lemmatizedDataByVocabulary,
-    #                                                       lem.scoredByVocabulary, posneg,
-    #                                                       stopwords)
+    computeSentimentScoresForNouns(datasetName + '_', lem.cleanedByVocabulary, lem.scoredByVocabulary, posneg, stopwords)
+    computeSentimentScoresAfterTransformingObjectiveWords(datasetName + '_', lem.cleanedByVocabulary,
+                                                          lem.lemmatizedDataByVocabulary,
+                                                          lem.scoredByVocabulary, posneg,
+                                                          stopwords)
 
-    if config.websiteName == 'BizrateDotCom':
-        if not os.path.exists(config.featureSelectedDataPath):
-            log.info('{} does not exist and will be created.'.format(config.featureSelectedDataPath))
-            os.makedirs(config.featureSelectedDataPath)
-        featureSelection(datasetName)
-    elif config.websiteName == 'KbbDotCom':
-        computeGiniIndexScore(datasetName + '_nouns_tfidf.csv')
-    else:
-        pass
+    # if config.websiteName == 'BizrateDotCom':
+    #     if not os.path.exists(config.featureSelectedDataPath):
+    #         log.info('{} does not exist and will be created.'.format(config.featureSelectedDataPath))
+    #         os.makedirs(config.featureSelectedDataPath)
+    #     featureSelection(datasetName)
+    # elif config.websiteName == 'KbbDotCom':
+    #     computeGiniIndexScore(datasetName + '_nouns_tfidf.csv')
+    # else:
+    #     pass
     log.info('----------------------------------------\n')
 
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     reviewData, posneg = [], []
     if config.websiteName == 'BizrateDotCom':
         reviewFiles = [(config.splittedDataPath + x) for x in os.listdir(config.splittedDataPath)
-                       if x.endswith('.csv') and '_split_' in x]
+                       if x.endswith('.csv') and '_split_' not in x]
     elif config.websiteName == 'KbbDotCom':
         reviewFiles = [(config.splittedDataPath + x) for x in os.listdir(config.splittedDataPath)
                        if x.endswith('.csv')]

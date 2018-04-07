@@ -72,6 +72,71 @@ def computeGiniIndexScore(filename):
     log.info('Done! Gini index score is computed and saved in ' + filename)
 
 
+def computeGiniIndexScore2Gram(filename, wordList):
+    """
+    Compute Gini index score for every feature in TFIDF matrix.
+    :param filename: TFIDF filename.
+    :param wordList: a list of 2-gram words
+    """
+
+    log.info('Compute GINI index score ...')
+    datasetName = re.match('(.*)_nouns_tfidf.csv', filename).group(1)
+    df = pd.read_csv(config.processedDataPath + filename)
+    shape = df.shape
+    log.info('TFIDF file {} has {} reviews and {} features.'.format(filename, shape[0], shape[1] - 1))
+    labelName = 'posneg'
+    labelPositive = 1
+    labelNegative = 0
+
+    result = [('feature', 'gini', 'posneg', 'num_pos', 'num_neg', 'total')]
+    for column in df:
+        if column == labelName:
+            continue
+        idx_app = df.index[df[column] > 0]  # reviews' Id that a particular word appears
+        idx_napp = df.index[~df.index.isin(idx_app)]  # reviews' Id that a particular word doesn't appear
+        assert shape[0] == (len(idx_app) + len(idx_napp)), 'appear_index + not_appear_index != num_reviews'
+
+        num_pos_app, num_neg_app = 0, 0  # number of positive/negative reviews that a particular word appears
+        num_pos_napp, num_neg_napp = 0, 0  # number of positive/negative reviews that a particular word doesn't appear
+
+        for label in (df.loc[idx_app, labelName] == labelPositive):
+            if label:
+                num_pos_app += 1
+            else:
+                num_neg_app += 1
+        for label in (df.loc[idx_napp, labelName] == labelNegative):
+            if label:
+                num_pos_napp += 1
+            else:
+                num_neg_napp += 1
+        assert num_pos_app + num_neg_app == len(idx_app), 'appear_pos + appear_neg != num_appear'
+        assert num_pos_napp + num_neg_napp == len(idx_napp), 'not_appear_pos + not_appear_neg != num_not_appear'
+
+        # gini index of appeared case
+        if num_pos_app == 0 or num_neg_app == 0:
+            gini_app = 1.0
+        else:
+            gini_app = (num_pos_app / len(idx_app)) ** 2 + (num_neg_app / len(idx_app)) ** 2
+
+        # gini index of not appeared case
+        if num_pos_napp == 0 or num_neg_napp == 0:
+            gini_napp = 1.0
+        else:
+            gini_napp = (num_pos_napp / len(idx_napp)) ** 2 + (num_neg_napp / len(idx_napp)) ** 2
+
+        posneg_app = 1 if num_pos_app > num_neg_app else (0 if num_neg_app > num_pos_app else 2)
+        posneg_napp = 1 if num_pos_napp > num_neg_napp else (0 if num_neg_napp > num_pos_napp else 2)
+        result.append((column + '_1', gini_app, posneg_app, num_pos_app, num_neg_app, len(idx_app)))
+        result.append((column + '_0', gini_napp, posneg_napp, num_pos_napp, num_neg_napp, len(idx_napp)))
+
+    filename = config.processedDataPath + datasetName + '_gini.csv'
+    with open(filename, 'w') as fp:
+        for res in result:
+            fp.write(','.join(str(x) for x in res))
+            fp.write('\n')
+    log.info('Done! Gini index score is computed and saved in ' + filename)
+
+
 def computeSentimentScoresForAllWords(datasetName, cleanedContents, taggedWords, posneg, stopwords):
     """
     Compute sentiment scores for all words.
