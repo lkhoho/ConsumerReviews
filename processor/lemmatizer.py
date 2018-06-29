@@ -3,71 +3,65 @@ import enum
 import nltk
 from nltk.corpus import sentiwordnet as swn
 from common import config
+from utils.logging import get_logger
 
 
-@enum.unique
-class LemmatizerType(enum.Enum):
-    """
-    Types of lemmatizer.
-    """
 
-    Paragraph = 0
-    Vocabulary = 1
 
 
 class Lemmatizer(object):
     """
-    Provide lemmatization for given corpus. Two lemmatizations are provided: 1) by sentence; 2) by vocabulary.
+    Provide lemmatization for given corpus. Supports two lemmatizers: 1) by sentence; 2) by vocabulary.
     """
 
-    log = config.getLogger(__name__)
+    log = get_logger('Lemmatizer')
 
-    def __init__(self, tagger, lemmatizationType: LemmatizerType, posMapping: dict, data: list, stopwords: set):
+    def __init__(self, tagger, lemm_type, part_of_speech: dict, data: list, stopwords: set):
         """
         Create a lemmatizer instance.
         :param tagger: a part-of-speech (POS) tagger.
-        :param lemmatizationType: 'sentence' or 'vocabulary'
-        :param posMapping: POS mapping, e.g. {'NN' -> 'n', 'JJ' -> 'a'}
+        :param lemm_type: lemmatization type: PARAGRAPH, or VOCABULARY
+        :param part_of_speech: POS mapping, e.g. {'NN' -> 'n', 'JJ' -> 'a'}
         :param stopwords: a set of stopwords.
         """
 
         self.tagger = tagger
-        self.type = lemmatizationType
-        self.posMapping = posMapping
+        self.type = lemm_type
+        self.pos = part_of_speech
         self.stopwords = stopwords
         self.data = data
-        self.lemmatizedDataByParagraph = []
-        self.lemmatizedDataByVocabulary = []
-        self.scoredByParagraph = {}
-        self.scoredByVocabulary = {}
+        self.lemmatized_by_paragraph = []
+        self.lemmatized_by_vocabulary = []
+        self.scored_by_paragraph = {}
+        self.scored_by_vocabulary = {}
         self.noScoreWordsByParagraph = []
         self.noScoreWordsByVocabulary = []
         self.cleanedByParagraph = []
         self.cleanedByVocabulary = []
 
-    def computeSentimentScores(self, batchSize=50):
+    def computeSentimentScores(self, batch_size=50):
         """
         Getting sentiment scores of words from sentiwordnet.
-        :param batchSize: number of words processed in single batch.
+        :param batch_size: number of words processed in single batch.
         :return list of review contents with each word has sentiment scores. e.g 'like': (v, 0.8, 0.0, 0.0)
         """
 
-        if self.type == LemmatizerType.Vocabulary:
-            lemContents = self.lemmatizedDataByVocabulary
+        if self.type is LemmatizerType.VOCABULARY:
+            lemContents = self.lemmatized_by_vocabulary
             voc = set()
             Lemmatizer.log.info('Start getting scores of {} words by {}.'.format(
                 len(lemContents), self.type.name.lower()))
             for content in lemContents:
                 voc |= set([w for w in content.split() if len(w) > 1 and w != '###'])
-            self.scoredByVocabulary, self.noScoreWordsByVocabulary = self._scoreWordSet(voc, batchSize)
+            self.scored_by_vocabulary, self.noScoreWordsByVocabulary = self._scoreWordSet(voc, batch_size)
         else:
-            lemContents = self.lemmatizedDataByParagraph
+            lemContents = self.lemmatized_by_paragraph
             voc = set()
             Lemmatizer.log.info('Start getting scores of {} words by {}.'.format(
                 len(lemContents), self.type.name.lower()))
             for content in lemContents:
                 voc |= set([w for w in content.split() if len(w) > 1 and w != '###'])
-            self.scoredByParagraph, self.noScoreWordsByParagraph = self._scoreWordSet(voc, batchSize)
+            self.scored_by_paragraph, self.noScoreWordsByParagraph = self._scoreWordSet(voc, batch_size)
 
     def lemmatize(self):
         """
@@ -77,11 +71,11 @@ class Lemmatizer(object):
         lem = nltk.WordNetLemmatizer()
         invalidPOS = 'x'  # invalid part-of-speech
 
-        if self.type == LemmatizerType.Vocabulary:
+        if self.type == LemmatizerType.VOCABULARY:
             Lemmatizer.log.info('Start lemmatizing data based on vocabulary.')
             self._lemmatizeByVocabulary(lem, invalidPOS)
             Lemmatizer.log.info('Finished lemmatizing data based on vocabulary.')
-        elif self.type == LemmatizerType.Paragraph:
+        elif self.type == LemmatizerType.PARAGRAPH:
             Lemmatizer.log.info('Start lemmatizing data based on paragraph.')
             self._lemmatizeByParagraph(lem, invalidPOS)
             Lemmatizer.log.info('Finished lemmatizing data based on paragraph.')
@@ -92,10 +86,10 @@ class Lemmatizer(object):
         """
 
         Lemmatizer.log.info('Removing words starting with "###"')
-        for content in self.lemmatizedDataByVocabulary:
+        for content in self.lemmatized_by_vocabulary:
             content = ' '.join([w for w in content.split() if not w.startswith('###')])
             self.cleanedByVocabulary.append(content)
-        for content in self.lemmatizedDataByParagraph:
+        for content in self.lemmatized_by_paragraph:
             content = ' '.join([w for w in content.split() if not w.startswith('###')])
             self.cleanedByParagraph.append(content)
 
@@ -128,13 +122,13 @@ class Lemmatizer(object):
                 tokens = [w for w in tokens if w not in self.stopwords]
                 tokens.append('###')
                 for word in tokens:
-                    pos = self.posMapping.get(taggedVocabulary.get(word), invalidPOS)
+                    pos = self.pos.get(taggedVocabulary.get(word), invalidPOS)
                     if word in taggedVocabulary and pos != invalidPOS:
                         word = lem.lemmatize(word, pos=pos)
                         words.append(word + '_' + pos)
                     elif word == '###':
                         words.append('###')
-            self.lemmatizedDataByVocabulary.append(' '.join(words))
+            self.lemmatized_by_vocabulary.append(' '.join(words))
 
     def _lemmatizeByParagraph(self, lem: nltk.WordNetLemmatizer, invalidPOS: str):
         """
@@ -159,14 +153,14 @@ class Lemmatizer(object):
             words = []
             for t in tagged:
                 raw_words = re.findall(r'[a-zA-Z]+|#{3}', t[0])
-                pos = self.posMapping.get(t[1], invalidPOS)
+                pos = self.pos.get(t[1], invalidPOS)
                 if len(raw_words) > 0 and (raw_words[0] not in self.stopwords) and pos != invalidPOS:
                     word = raw_words[0]
                     word = lem.lemmatize(word, pos=pos)
                     words.append(word + '_' + pos)
                 elif len(raw_words) > 0 and raw_words[0] == '###':
                     words.append('###')
-            self.lemmatizedDataByParagraph.append(' '.join(words))
+            self.lemmatized_by_paragraph.append(' '.join(words))
 
     def _scoreWordSet(self, words: set, batchSize=50) -> tuple:
         """

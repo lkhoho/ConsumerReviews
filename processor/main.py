@@ -29,19 +29,19 @@ def _processHelper(fileId, filename, nTotalTasks):
         log.error('Error: unsupported website data.')
         return
 
-    lem = Lemmatizer(tagger, LemmatizerType.Vocabulary, config.POSDict, reviewData, stopwords)
+    lem = Lemmatizer(tagger, LemmatizerType.VOCABULARY, config.POSDict, reviewData, stopwords)
     lem.lemmatize()
-    lem.computeSentimentScores(batchSize=100)
+    lem.computeSentimentScores(batch_size=100)
     lem.removeUndesiredWords()
 
     if not os.path.exists(config.processedDataPath):
         log.info('{} does not exist and will be created.'.format(config.processedDataPath))
         os.makedirs(config.processedDataPath)
-    computeSentimentScoresForAllWords(datasetName + '_', lem.cleanedByVocabulary, lem.scoredByVocabulary, posneg, stopwords)
-    computeSentimentScoresForNouns(datasetName + '_', lem.cleanedByVocabulary, lem.scoredByVocabulary, posneg, stopwords)
+    computeSentimentScoresForAllWords(datasetName + '_', lem.cleanedByVocabulary, lem.scored_by_vocabulary, posneg, stopwords)
+    computeSentimentScoresForNouns(datasetName + '_', lem.cleanedByVocabulary, lem.scored_by_vocabulary, posneg, stopwords)
     computeSentimentScoresAfterTransformingObjectiveWords(datasetName + '_', lem.cleanedByVocabulary,
-                                                          lem.lemmatizedDataByVocabulary,
-                                                          lem.scoredByVocabulary, posneg,
+                                                          lem.lemmatized_by_vocabulary,
+                                                          lem.scored_by_vocabulary, posneg,
                                                           stopwords)
 
     # if config.websiteName == 'BizrateDotCom':

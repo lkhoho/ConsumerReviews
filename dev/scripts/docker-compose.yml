@@ -1,0 +1,10 @@
+version: "3.6"
+
+services:
+  mysql:
+    image: lkhoho/mysql
+    ports:
+      - '3306:3306'
+    volumes:
+      - $DOCKER_DATA_ROOT/mysql:/var/lib/mysql
+      - $PROJ_CONSUMER_REVIEWS/dev/conf/mysql:/etc/mysql/conf.d
