@@ -11,7 +11,7 @@ import scipy.stats as stats
 from pymongo import MongoClient
 from common import config
 
-log = config.getLogger(__name__)
+log = config.get_logger(__name__)
 
 
 @enum.unique
@@ -55,7 +55,7 @@ class DatasetSplitter(object):
     Split dataset by given intervals.
     """
 
-    log = config.getLogger('DatasetSplitter')
+    log = config.get_logger('DatasetSplitter')
 
     def __init__(self, **kwargs):
         super().__init__()

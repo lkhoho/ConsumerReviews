@@ -1,13 +1,13 @@
 import os
-import glob
 import enum
+import re
+import itertools
+import logging
 import operator
 import pandas as pd
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
-from utils.logging import get_logger
-
-log = get_logger(__name__)
+from preprocessing.lemmatization import LemmatizationMode
 
 
 @enum.unique
@@ -23,37 +23,47 @@ class FeatureSelectionMode(enum.Enum):
         return self.value
 
 
-def feature_selection(lem_mode, feature_mode, num_features, label_name, store, working_dir, include_index, **kwargs):
-    exec_date = kwargs['execution_date'].strftime('%Y%m%d')
+def feature_selection(lem_mode: LemmatizationMode, feature_mode: FeatureSelectionMode, num_features: list,
+                      store: str, working_dir: str, include_index: bool, **context):
+    exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    wd = os.getcwd()
-    os.chdir(working_dir)
-    files = glob.glob(store + '__nlp_raw_tfidf__' + str(lem_mode) + '*.csv') \
-        + glob.glob(store + '__nlp_nouns_tfidf__' + str(lem_mode) + '*.csv')
-    dir_name = working_dir + os.path.sep + str(feature_mode)
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
-    for file in files:
+    input_files = [xcom['output_files']
+                   for xcom in context['task_instance'].xcom_pull(task_ids=[
+                    'process_all_words__{}_{}'.format(store, str(lem_mode)),
+                    'process_nouns__{}_{}'.format(store, str(lem_mode)),
+                    'transform_objective__{}_{}'.format(store, str(lem_mode))])]
+    input_files = list(itertools.chain(*input_files))
+    logging.info('Input files=' + str(input_files))
+    dir_path = os.path.sep.join([working_dir, 'feature_selection'])
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    regex = r'.+{}_{}_(?P<label>[A-Z_]+)_.+\.csv'.format(str(store), str(lem_mode))
+    output_files = []
+    for file in input_files:
         df = pd.read_csv(working_dir + os.path.sep + file)
+        label = re.match(regex, file).group('label')
         if feature_mode is FeatureSelectionMode.FREQUENCY:
-            selected_features = _frequency_feature_selection(df, label_name)
-            # log.info('keliu: {}: {}'.format(file, len(selected_features)))
+            selected_features = _frequency_feature_selection(df, label)
             for num in num_features:
                 features = selected_features[:num]
-                features.append(label_name)
+                features.append(label)
                 result = df[features]
-                file_name = dir_name + os.path.sep + file[:file.rindex('.')] + '_{}_{}.csv'\
+                filename = file[file.rindex(os.path.sep) + 1:file.rindex('.')] + '_{}_{}.csv'\
                     .format(str(feature_mode), str(num))
-                result.to_csv(file_name, index=include_index)
+                output_files.append(filename)
+                result.to_csv(os.path.sep.join([dir_path, filename]), index=include_index)
         elif feature_mode is FeatureSelectionMode.CHI_SQUARE:
             for num in num_features:
-                selected_df = _chi_square_feature_selection(df, label_name, num)
-                # log.info('keliu: ' + str(selected_df.shape))
-                selected_df[label_name] = df[label_name]
-                file_name = dir_name + os.path.sep + file[:file.rindex('.')] + '_{}_{}.csv'\
+                selected_df = _chi_square_feature_selection(df, label, num)
+                selected_df[label] = df[label]
+                filename = file[file.rindex(os.path.sep) + 1:file.rindex('.')] + '_{}_{}.csv'\
                     .format(str(feature_mode), str(num))
-                selected_df.to_csv(file_name, index=include_index)
-    os.chdir(wd)
+                output_files.append(filename)
+                selected_df.to_csv(os.path.sep.join([dir_path, filename]), index=include_index)
+    return {
+        'input_files': input_files,
+        'output_files': [os.path.sep.join(['feature_selection', filename]) for filename in output_files]
+    }
 
 
 def _frequency_feature_selection(data_frame, label) -> list:

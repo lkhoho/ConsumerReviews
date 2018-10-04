@@ -61,7 +61,7 @@ kbbDotComLabelConfig = {
 ############################################################################################################
 
 
-def getLogger(name):
+def get_logger(name):
     formatter = logging.Formatter(fmt='%(levelname)s [%(module)s] - %(asctime)s: %(message)s',
                                   datefmt='%m/%d/%Y %I:%M:%S %p')
     handler = logging.StreamHandler()

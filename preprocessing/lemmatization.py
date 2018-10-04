@@ -1,20 +1,11 @@
 import os
 import re
 import enum
+import logging
 import simplejson as json
 import nltk
-import pandas as pd
 from nltk.corpus import sentiwordnet as swn
-from utils.logging import get_logger
-
-log = get_logger(__name__)
-
-sentence_sep = '###'
-invalid_pos = 'x'
-POS = {
-    'JJ': 'a', 'JJR': 'a', 'JJS': 'a', 'NN': 'n', 'NNP': 'n', 'NNS': 'n', 'NNPS': 'n', 'RB': 'r',
-    'RBR': 'r', 'RBS': 'r', 'VB': 'v', 'VBD': 'v', 'VBG': 'v', 'VBN': 'v', 'VBP': 'v'
-}
+import pandas as pd
 
 
 @enum.unique
@@ -30,53 +21,38 @@ class LemmatizationMode(enum.Enum):
         return self.value
 
 
-def read_stopwords(file):
-    result = set(nltk.corpus.stopwords.words('english'))
-    with open(file) as fp:
-        result |= {word.strip().lower for word in fp}
-    return result
-
-
-def lemmatize(tagger_config, part_of_speech, lemmatizer, mode, stopwords, store, working_dir, **kwargs):
-    exec_date = kwargs['execution_date'].strftime('%Y%m%d')
+def lemmatize(lemmatization_config, mode: LemmatizationMode,
+              stopwords: set, store: str, working_dir: str, **context):
+    exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    tagger = _get_tagger(tagger_config)
-
-    if part_of_speech is None or part_of_speech.lower() == 'default':
-        part_of_speech = POS
-
-    if lemmatizer is None or lemmatizer.lower() == 'default':
-        lemmatizer = nltk.WordNetLemmatizer()
-
-    if stopwords is None or stopwords.lower() == 'default':
-        path = os.path.sep.join([os.path.dirname(__file__), 'resource', 'stopwords.txt'])
-        stopwords = read_stopwords(path)
-
-    file_name = store + '__original__.csv'
-    df = pd.read_csv(working_dir + os.path.sep + file_name)
+    tagger = nltk.tag.stanford.StanfordPOSTagger(lemmatization_config.pos_tagger['model'],
+                                                 path_to_jar=lemmatization_config.pos_tagger['jar'])
+    input_file = context['task_instance'].xcom_pull(task_ids='fetch__' + store)['output_files'][0]
+    logging.info('Lemmatize file={} with mode={}'.format(input_file, str(mode)))
+    df = pd.read_csv(working_dir + os.path.sep + input_file)
     if mode is LemmatizationMode.PARAGRAPH:
         fn = _lem_by_para
     elif mode is LemmatizationMode.VOCABULARY:
         fn = _lem_by_voc
     else:
-        log.error('Unknown lemmatization type: ' + str(mode))
+        logging.error('Unknown lemmatization type: ' + str(mode))
         return
-    result = fn(df['PID'].astype('int'), df['BEFORE_REVIEW'].astype('str'),
-                tagger, part_of_speech, lemmatizer, stopwords)
-    file_name = store + '__lemmatized__' + str(mode) + '.json'
-    with open(working_dir + os.path.sep + file_name, 'w') as fp:
+    result = fn(pids=df['PID'].astype('int'), texts=df['BEFORE_REVIEW'].astype('str'), lem_config=lemmatization_config,
+                tagger=tagger, stopwords=stopwords)
+    dir_path = os.path.sep.join([working_dir, 'lemmatized_and_scored'])
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    file_name = store + '__' + str(mode) + '.json'
+    with open(os.path.sep.join([dir_path, file_name]), 'w') as fp:
         json.dump(result, fp)
+    return {
+        'input_files': [input_file],
+        'output_files': [os.path.sep.join(['lemmatized_and_scored', file_name])]
+    }
 
 
-def _get_tagger(tagger_config):
-    model = tagger_config['model']
-    model_path = tagger_config['model_path'][model]
-    jar_path = tagger_config['jar_path']
-    return nltk.tag.stanford.StanfordPOSTagger(model_path, path_to_jar=jar_path)
-
-
-def _lem_by_voc(pids, texts, tagger, part_of_speech, lem, stopwords):
-    result = {}
+def _lem_by_voc(pids: list, texts: list, lem_config, tagger, stopwords: set):
+    result = []
     vocabulary = set()
     texts_lower = [text.strip().lower() for text in texts]
 
@@ -92,61 +68,73 @@ def _lem_by_voc(pids, texts, tagger, part_of_speech, lem, stopwords):
         for sent in nltk.sent_tokenize(text):
             tokens = [x for x in re.findall(r'[a-zA-Z]+', sent) if len(x) > 1]
             tokens = list(filter(lambda x: x not in stopwords, tokens))
-            tokens.append(sentence_sep)
+            tokens.append(lem_config.sentence_sep)
             for word in tokens:
-                pos = part_of_speech.get(tagged_voc.get(word), invalid_pos)
-                if word in tagged_voc and pos != invalid_pos:
-                    word = lem.lemmatize(word, pos=pos)
+                pos = lem_config.pos_mapping.get(tagged_voc.get(word), lem_config.invalid_pos)
+                if word in tagged_voc and pos != lem_config.invalid_pos:
+                    word = lem_config.lemmatizer.lemmatize(word, pos=pos)
                     words.append(word + '_' + pos)
-                elif word == sentence_sep:
-                    words.append(sentence_sep)
-        result[pid] = (' '.join(words))
+                elif word == lem_config.sentence_sep:
+                    words.append(lem_config.sentence_sep)
+        result.append({'pid': pid, 'text': ' '.join(words)})
     return result
 
 
-def _lem_by_para(pids, texts, tagger, part_of_speech, lem, stopwords, verbose=500):
-    result = {}
+def _lem_by_para(pids: list, texts: list, lem_config, tagger, stopwords, verbose=500):
+    result = []
     for pid, text in zip(pids, texts):
         if pid % verbose == 0:
-            log.info('Lemmatize text {}/{} by paragraph.'.format(pid, len(texts)))
+            logging.info('Lemmatize text {}/{} by paragraph.'.format(pid, len(texts)))
         text = text.strip().lower()
         sentences = nltk.sent_tokenize(text)
         words = []
         for sent in sentences:
             words += [x for x in sent.split() if x not in stopwords and len(x) > 1]
-            words.append(sentence_sep)
+            words.append(lem_config.sentence_sep)
         text = [x for x in words if x not in stopwords and len(x) > 1]
         tagged = [x for x in tagger.tag(text) if len(x[0]) > 1]
         words = []
         for t in tagged:
             raw_words = re.findall(r'[a-zA-Z]+|#{3}', t[0])
-            pos = part_of_speech.get(t[1], invalid_pos)
-            if len(raw_words) > 0 and (raw_words[0] not in stopwords) and pos != invalid_pos:
+            pos = lem_config.pos_mapping.get(t[1], lem_config.invalid_pos)
+            if len(raw_words) > 0 and (raw_words[0] not in stopwords) and pos != lem_config.invalid_pos:
                 word = raw_words[0]
-                word = lem.lemmatize(word, pos=pos)
+                word = lem_config.lemmatizer.lemmatize(word, pos=pos)
                 words.append(word + '_' + pos)
-            elif len(raw_words) > 0 and raw_words[0] == sentence_sep:
-                words.append(sentence_sep)
-        result[pid] = (' '.join(words))
+            elif len(raw_words) > 0 and raw_words[0] == lem_config.sentence_sep:
+                words.append(lem_config.sentence_sep)
+        result.append({'pid': pid, 'text': ' '.join(words)})
     return result
 
 
-def compute_sentiment_score(mode, store, working_dir, **kwargs):
-    exec_date = kwargs['execution_date'].strftime('%Y%m%d')
+def compute_sentiment_score(sentence_sep, mode, store, working_dir, **context):
+    exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    file_name = store + '__lemmatized__' + str(mode) + '.json'
-    with open(working_dir + os.path.sep + file_name) as fp:
+    input_file = context['task_instance'].xcom_pull(task_ids=context['task'].upstream_task_ids[-1])['output_files'][0]
+    logging.info('Compute sentiment score on file=' + input_file)
+    with open(working_dir + os.path.sep + input_file) as fp:
         json_file = json.load(fp)
-    word_2_score, no_score = _sentiment_score_helper(json_file.values())
+    texts = [x['text'] for x in json_file]
+    word_2_score, no_score = _sentiment_score_helper(texts, sentence_sep)
+    dir_path = os.path.sep.join([working_dir, 'lemmatized_and_scored'])
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
     score_file_name = store + '__scored__' + str(mode) + '.json'
     no_score_file_name = store + '__noscore__' + str(mode) + '.json'
-    with open(working_dir + os.path.sep + score_file_name, 'w') as fp:
+    with open(os.path.sep.join([dir_path, score_file_name]), 'w') as fp:
         json.dump(word_2_score, fp)
-    with open(working_dir + os.path.sep + no_score_file_name, 'w') as fp:
+    with open(os.path.sep.join([dir_path, no_score_file_name]), 'w') as fp:
         json.dump(no_score, fp)
+    return {
+        'input_files': [input_file],
+        'output_files': {
+            'scored': os.path.sep.join(['lemmatized_and_scored', score_file_name]),
+            'noscore': os.path.sep.join(['lemmatized_and_scored', no_score_file_name])
+        }
+    }
 
 
-def _sentiment_score_helper(texts, batch_size=100):
+def _sentiment_score_helper(texts, sentence_sep, batch_size=100):
     texts = [text.strip().lower() for text in texts]
     words = set()
     for text in texts:
@@ -172,14 +160,23 @@ def _sentiment_score_helper(texts, batch_size=100):
     return result, no_score_words
 
 
-def clean_undesired(mode, store, working_dir, **kwargs):
-    exec_date = kwargs['execution_date'].strftime('%Y%m%d')
+def clean_undesired(sentence_sep, mode, store, working_dir, **context):
+    exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    file_name = store + '__lemmatized__' + str(mode) + '.json'
-    with open(working_dir + os.path.sep + file_name) as fp:
+    input_file = context['task_instance'].xcom_pull(task_ids=context['task'].upstream_task_ids[-1])['output_files'][0]
+    logging.info('Clean undesired terms from file=' + input_file)
+    with open(working_dir + os.path.sep + input_file) as fp:
         json_file = json.load(fp)
-    result = {pid: ' '.join([w for w in text.split() if not w.startswith(sentence_sep)])
-              for (pid, text) in json_file.items()}
+    result = [{'pid': x['pid'],
+               'text': ' '.join([w for w in x['text'].split() if not w.startswith(sentence_sep)])}
+              for x in json_file]
+    dir_path = os.path.sep.join([working_dir, 'lemmatized_and_scored'])
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
     file_name = store + '__cleaned__' + str(mode) + '.json'
-    with open(working_dir + os.path.sep + file_name, 'w') as fp:
+    with open(os.path.sep.join([dir_path, file_name]), 'w') as fp:
         json.dump(result, fp)
+    return {
+        'input_files': [input_file],
+        'output_files': [os.path.sep.join(['lemmatized_and_scored', file_name])]
+    }

@@ -1,122 +1,208 @@
 import os
 import re
+import logging
 import glob
 import simplejson as json
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
-from .lemmatization import read_stopwords
-from utils.logging import get_logger
-
-log = get_logger(__name__)
+from preprocessing.lemmatization import LemmatizationMode
 
 
-def process_all(positive_label_threshold, label_name, stopwords, mode, store, working_dir, include_index, **kwargs):
+def process_all(stopwords: set, mode: LemmatizationMode, store: str, working_dir: str, include_index: bool, **context):
     """
     Compute sentiment scores for all words.
     """
 
-    exec_date = kwargs['execution_date'].strftime('%Y%m%d')
+    exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    if stopwords is None or stopwords.lower() == 'default':
-        path = os.path.sep.join([os.path.dirname(__file__), 'resource', 'stopwords.txt'])
-        stopwords = read_stopwords(path)
-    wd = os.getcwd()
-    os.chdir(working_dir)
-    word2score_file = store + '__scored__' + str(mode) + '.json'
-    with open(word2score_file) as fp:
+
+    input_files = context['task_instance'].xcom_pull(task_ids='over_sampling__' + store)['output_files']
+    logging.info('Input files=' + str(input_files))
+
+    score_file = context['task_instance'].xcom_pull(
+        task_ids='score__{}_{}'.format(store, str(mode)))['output_files']['scored']
+    with open(working_dir + os.path.sep + score_file) as fp:
         word2score = json.load(fp)
-    review_file = store + '__cleaned__' + str(mode) + '.json'
-    with open(review_file) as fp:
+    logging.info('Score file=' + score_file)
+
+    cleaned_file = context['task_instance'].xcom_pull(
+        task_ids='clean__{}_{}'.format(store, str(mode)))['output_files'][0]
+    with open(working_dir + os.path.sep + cleaned_file) as fp:
         reviews = json.load(fp)
-    rating_files = glob.glob(store + '__split__*.csv')
-    regex = r'.+__split__(?P<score>\w+)__(?P<range>[\w\d\-.]+)\.csv'
-    for file in rating_files:
-        score_name = re.match(regex, file).group('score')
-        range_kv = re.match(regex, file).group('range')
+    logging.info('Cleaned file=' + cleaned_file)
+
+    # wd = os.getcwd()
+    # os.chdir(working_dir)
+    # word2score_file = store + '__scored__' + str(mode) + '.json'
+    # with open(word2score_file) as fp:
+    #     word2score = json.load(fp)
+    # review_file = store + '__cleaned__' + str(mode) + '.json'
+    # with open(review_file) as fp:
+    #     reviews = json.load(fp)
+    # rating_files = glob.glob(store + '__split__*.csv')
+    # regex = r'.+__split__(?P<score>\w+)__(?P<range>[\w\d\-.]+)\.csv'
+    regex = r'.+__(?P<label>[\w_]+)\.csv'
+    output_files = []
+    for file in input_files:
+        # score_name = re.match(regex, file).group('score')
+        # range_kv = re.match(regex, file).group('range')
+        label = re.match(regex, file).group('label')
         df = pd.read_csv(working_dir + os.path.sep + file)
-        labels = [1 if v >= positive_label_threshold else 0 for v in df[score_name]]
-        texts = [reviews[str(pid)] for pid in df['PID']]
-        file_name_pattern = working_dir + os.path.sep + store + '__nlp_{}__' \
-            + str(mode) + '_' + score_name + '_' + range_kv + '.csv'
-        _compute_sentiment_scores_all_words(texts, labels, label_name, word2score, stopwords,
-                                            file_name_pattern, include_index)
-    os.chdir(wd)
+        for pid, text in [(x['pid'], x['text']) for x in reviews]:
+            df.loc[df['PID'] == pid, 'BEFORE_REVIEW'] = text
+        file_name_pattern = os.path.sep.join(['nlp', '{}_{}_{}_'.format(store, str(mode), label)])
+        if not os.path.exists(os.path.sep.join([working_dir, 'nlp'])):
+            os.makedirs(os.path.sep.join([working_dir, 'nlp']))
+        # + str(mode) + '_' + score_name + '_' + range_kv + '.csv'
+        results = _helper_all_words(cleaned_texts=df['BEFORE_REVIEW'].tolist(), labels=df[label].tolist(),
+                                    label_name=label, word2score=word2score, stopwords=stopwords,
+                                    file_name_pattern=working_dir + os.path.sep + file_name_pattern + '{}.csv',
+                                    include_index=include_index)
+        output_files += results
+    return {
+        'input_files': input_files,
+        'output_files': [os.path.sep.join(['nlp', filename]) for filename in output_files],
+        'nlp': 'process_all'
+    }
+    # os.chdir(wd)
 
 
-def process_nouns(positive_label_threshold, label_name, stopwords, mode, store, working_dir, include_index, **kwargs):
+def process_nouns(stopwords: set, mode: LemmatizationMode, store: str, working_dir: str, include_index: bool, **context):
     """
     Compute sentiment scores for nouns only.
     """
 
-    exec_date = kwargs['execution_date'].strftime('%Y%m%d')
+    exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    if stopwords is None or stopwords.lower() == 'default':
-        path = os.path.sep.join([os.path.dirname(__file__), 'resource', 'stopwords.txt'])
-        stopwords = read_stopwords(path)
-    wd = os.getcwd()
-    os.chdir(working_dir)
-    word2score_file = store + '__scored__' + str(mode) + '.json'
-    with open(word2score_file) as fp:
+
+    input_files = context['task_instance'].xcom_pull(task_ids='over_sampling__' + store)['output_files']
+    logging.info('Input files=' + str(input_files))
+
+    score_file = context['task_instance'].xcom_pull(
+        task_ids='score__{}_{}'.format(store, str(mode)))['output_files']['scored']
+    with open(working_dir + os.path.sep + score_file) as fp:
         word2score = json.load(fp)
-    review_file = store + '__cleaned__' + str(mode) + '.json'
-    with open(review_file) as fp:
+    logging.info('Score file=' + score_file)
+
+    cleaned_file = context['task_instance'].xcom_pull(
+        task_ids='clean__{}_{}'.format(store, str(mode)))['output_files'][0]
+    with open(working_dir + os.path.sep + cleaned_file) as fp:
         reviews = json.load(fp)
-    rating_files = glob.glob(store + '__split__*.csv')
-    regex = r'.+__split__(?P<score>\w+)__(?P<range>[\w\d\-.]+)\.csv'
-    for file in rating_files:
-        score_name = re.match(regex, file).group('score')
-        range_kv = re.match(regex, file).group('range')
+    logging.info('Cleaned file=' + cleaned_file)
+
+    # wd = os.getcwd()
+    # os.chdir(working_dir)
+    # word2score_file = store + '__scored__' + str(mode) + '.json'
+    # with open(word2score_file) as fp:
+    #     word2score = json.load(fp)
+    # review_file = store + '__cleaned__' + str(mode) + '.json'
+    # with open(review_file) as fp:
+    #     reviews = json.load(fp)
+    # rating_files = glob.glob(store + '__split__*.csv')
+    # regex = r'.+__split__(?P<score>\w+)__(?P<range>[\w\d\-.]+)\.csv'
+    regex = r'.+__(?P<label>[\w_]+)\.csv'
+    output_files = []
+    for file in input_files:
+        # score_name = re.match(regex, file).group('score')
+        # range_kv = re.match(regex, file).group('range')
+        label = re.match(regex, file).group('label')
         df = pd.read_csv(working_dir + os.path.sep + file)
-        labels = [1 if v >= positive_label_threshold else 0 for v in df[score_name]]
-        texts = [reviews[str(pid)] for pid in df['PID']]
-        file_name_pattern = working_dir + os.path.sep + store + '__nlp_{}__' \
-            + str(mode) + '_' + score_name + '_' + range_kv + '.csv'
-        _compute_sentiment_scores_nouns(texts, labels, label_name, word2score, stopwords,
-                                        file_name_pattern, include_index)
-    os.chdir(wd)
+        for pid, text in [(x['pid'], x['text']) for x in reviews]:
+            df.loc[df['PID'] == pid, 'BEFORE_REVIEW'] = text
+        file_name_pattern = os.path.sep.join(['nlp', '{}_{}_{}_'.format(store, str(mode), label)])
+        if not os.path.exists(os.path.sep.join([working_dir, 'nlp'])):
+            os.makedirs(os.path.sep.join([working_dir, 'nlp']))
+            # + str(mode) + '_' + score_name + '_' + range_kv + '.csv'
+        results = _helper_nouns(cleaned_texts=df['BEFORE_REVIEW'].tolist(), labels=df[label].tolist(),
+                                label_name=label, word2score=word2score, stopwords=stopwords,
+                                file_name_pattern=working_dir + os.path.sep + file_name_pattern + '{}.csv',
+                                include_index=include_index)
+        output_files += results
+    return {
+        'input_files': input_files,
+        'output_files': [os.path.sep.join(['nlp', filename]) for filename in output_files],
+        'nlp': 'process_nouns'
+    }
+    # os.chdir(wd)
 
 
-def transform_objective(positive_label_threshold, label_name, stopwords, sep, mode, store, working_dir,
-                        include_index, **kwargs):
+def transform_objective(stopwords: set, mode: LemmatizationMode, sep: str, store: str, working_dir: str,
+                        include_index: bool, **context):
     """
     Compute sentiment scores based on transformed objective words.
     """
 
-    exec_date = kwargs['execution_date'].strftime('%Y%m%d')
+    exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    if stopwords is None or stopwords.lower() == 'default':
-        path = os.path.sep.join([os.path.dirname(__file__), 'resource', 'stopwords.txt'])
-        stopwords = read_stopwords(path)
-    wd = os.getcwd()
-    os.chdir(working_dir)
-    word2score_file = store + '__scored__' + str(mode) + '.json'
-    with open(word2score_file) as fp:
+
+    input_files = context['task_instance'].xcom_pull(task_ids='over_sampling__' + store)['output_files']
+    logging.info('Input files=' + str(input_files))
+
+    score_file = context['task_instance'].xcom_pull(
+        task_ids='score__{}_{}'.format(store, str(mode)))['output_files']['scored']
+    with open(working_dir + os.path.sep + score_file) as fp:
         word2score = json.load(fp)
-    cleaned_file = store + '__cleaned__' + str(mode) + '.json'
-    with open(cleaned_file) as fp:
-        cleaned_reviews = json.load(fp)
-    lemmatized_file = store + '__lemmatized__' + str(mode) + '.json'
-    with open(lemmatized_file) as fp:
-        lemmatized_reviews = json.load(fp)
-    rating_files = glob.glob(store + '__split__*.csv')
-    regex = r'.+__split__(?P<score>\w+)__(?P<range>[\w\d\-.]+)\.csv'
-    for file in rating_files:
-        score_name = re.match(regex, file).group('score')
-        range_kv = re.match(regex, file).group('range')
+    logging.info('Score file=' + score_file)
+
+    cleaned_file = context['task_instance'].xcom_pull(
+        task_ids='clean__{}_{}'.format(store, str(mode)))['output_files'][0]
+    with open(working_dir + os.path.sep + cleaned_file) as fp:
+        reviews = json.load(fp)
+    logging.info('Cleaned file=' + cleaned_file)
+
+    lemmatized_file = context['task_instance'].xcom_pull(
+        task_ids='lemmatize__{}_{}'.format(store, str(mode)))['output_files'][0]
+    with open(working_dir + os.path.sep + lemmatized_file) as fp:
+        lemmatized = json.load(fp)
+    logging.info('Lemmatized file=' + lemmatized_file)
+
+    # wd = os.getcwd()
+    # os.chdir(working_dir)
+    # word2score_file = store + '__scored__' + str(mode) + '.json'
+    # with open(word2score_file) as fp:
+    #     word2score = json.load(fp)
+    # cleaned_file = store + '__cleaned__' + str(mode) + '.json'
+    # with open(cleaned_file) as fp:
+    #     cleaned_reviews = json.load(fp)
+    # lemmatized_file = store + '__lemmatized__' + str(mode) + '.json'
+    # with open(lemmatized_file) as fp:
+    #     lemmatized_reviews = json.load(fp)
+    # rating_files = glob.glob(store + '__split__*.csv')
+    # regex = r'.+__split__(?P<score>\w+)__(?P<range>[\w\d\-.]+)\.csv'
+    regex = r'.+__(?P<label>[\w_]+)\.csv'
+    output_files = []
+    for file in input_files:
+        # score_name = re.match(regex, file).group('score')
+        # range_kv = re.match(regex, file).group('range')
+        label = re.match(regex, file).group('label')
         df = pd.read_csv(working_dir + os.path.sep + file)
-        labels = [1 if v >= positive_label_threshold else 0 for v in df[score_name]]
-        cleaned_texts = [cleaned_reviews[str(pid)] for pid in df['PID']]
-        lemmatized_texts = [lemmatized_reviews[str(pid)] for pid in df['PID']]
-        file_name_pattern = working_dir + os.path.sep + store + '__nlp_{}__' \
-            + str(mode) + '_' + score_name + '_' + range_kv + '.csv'
-        _compute_sentiment_scores_transform_objective_words(cleaned_texts, lemmatized_texts, labels, label_name,
-                                                            word2score, stopwords, sep, file_name_pattern,
-                                                            include_index)
-    os.chdir(wd)
+        for pid, text in [(x['pid'], x['text']) for x in reviews]:
+            df.loc[df['PID'] == pid, 'BEFORE_REVIEW'] = text
+        for pid, text in [(x['pid'], x['text']) for x in lemmatized]:
+            df.loc[df['PID'] == pid, 'LEMMATIZED_REVIEW'] = text
+        file_name_pattern = os.path.sep.join(['nlp', '{}_{}_{}_'.format(store, str(mode), label)])
+        if not os.path.exists(os.path.sep.join([working_dir, 'nlp'])):
+            os.makedirs(os.path.sep.join([working_dir, 'nlp']))
+            # + str(mode) + '_' + score_name + '_' + range_kv + '.csv'
+        results = _helper_transform_objective(cleaned_texts=df['BEFORE_REVIEW'].tolist(),
+                                              lemmatized_texts=df['LEMMATIZED_REVIEW'].tolist(),
+                                              labels=df[label].tolist(), label_name=label,
+                                              word2score=word2score, stopwords=stopwords, sep=sep,
+                                              file_name_pattern=working_dir + os.path.sep + file_name_pattern + '{}.csv',
+                                              include_index=include_index)
+        output_files += results
+    return {
+        'input_files': input_files,
+        'output_files': [os.path.sep.join(['nlp', filename]) for filename in output_files],
+        'nlp': 'transform_objective'
+    }
+    # os.chdir(wd)
 
 
-def _compute_sentiment_scores_all_words(cleaned_texts: list, labels: list, label_name, word2score: dict, stopwords: set,
-                                        file_name_pattern, include_index):
+def _helper_all_words(cleaned_texts: list, labels: list, label_name: str, word2score: dict,
+                      stopwords: set, file_name_pattern: str, include_index: bool):
+    output_files = []
+
     # 1) construct TFIDF matrix
     vectorizer = TfidfVectorizer(stop_words=list(stopwords))
     tfidf = vectorizer.fit_transform(cleaned_texts)
@@ -125,6 +211,7 @@ def _compute_sentiment_scores_all_words(cleaned_texts: list, labels: list, label
     df[label_name] = labels
     filename = file_name_pattern.format('raw_tfidf')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
 
     # 2) multiply sentiment scores of words
     for feature in df:
@@ -138,6 +225,7 @@ def _compute_sentiment_scores_all_words(cleaned_texts: list, labels: list, label
                 df[feature] *= 0.0
     filename = file_name_pattern.format('raw_mul')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
 
     # 3) construct sentiment scores for words
     pure_scores = []
@@ -161,10 +249,14 @@ def _compute_sentiment_scores_all_words(cleaned_texts: list, labels: list, label
     df[label_name] = labels
     filename = file_name_pattern.format('raw_sc')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
+    return output_files
 
 
-def _compute_sentiment_scores_nouns(cleaned_texts: list, labels: list, label_name, word2score: dict, stopwords: set,
-                                    file_name_pattern, include_index):
+def _helper_nouns(cleaned_texts: list, labels: list, label_name: str, word2score: dict, stopwords: set,
+                  file_name_pattern: str, include_index: bool):
+    output_files = []
+
     # 1) get scores of nouns
     noun_scores = _get_noun_scores(cleaned_texts, word2score)
     # filename = working_dir + os.path.sep + store + '__sentiment_scores_nouns__' + mode + '.json'
@@ -183,11 +275,12 @@ def _compute_sentiment_scores_nouns(cleaned_texts: list, labels: list, label_nam
     noun_set = set([x for d in noun_scores for x in list(d.keys())])
     not_in = [x for x in df_words if x not in noun_set]
     df = df.drop(not_in, axis=1)
-    log.info('{} non-noun words are dropped.'.format(len(not_in)))
+    logging.info('{} non-noun words are dropped.'.format(len(not_in)))
     labels = pd.Series(labels)
     df[label_name] = labels
     filename = file_name_pattern.format('nouns_tfidf')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
 
     # 3) multiply sentiment scores of words
     assert len(noun_scores) == df.shape[0]
@@ -196,6 +289,7 @@ def _compute_sentiment_scores_nouns(cleaned_texts: list, labels: list, label_nam
             df.loc[i, noun] *= score
     filename = file_name_pattern.format('nouns_mul')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
 
     # 4) construct sentiment scores for nouns
     pure_scores = []
@@ -213,11 +307,14 @@ def _compute_sentiment_scores_nouns(cleaned_texts: list, labels: list, label_nam
     df[label_name] = labels
     filename = file_name_pattern.format('nouns_sc')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
+    return output_files
 
 
-def _compute_sentiment_scores_transform_objective_words(cleaned_texts: list, lemmatized_texts: list, labels: list,
-                                                        label_name, word2score: dict, stopwords: set, sep,
-                                                        file_name_pattern, include_index):
+def _helper_transform_objective(cleaned_texts: list, lemmatized_texts: list, labels: list, label_name: str,
+                                word2score: dict, stopwords: set, sep: str, file_name_pattern: str,
+                                include_index: bool):
+    output_files = []
     # 1) construct TFIDF matrix
     # tfidf = TfidfVectorizer(tokenizer=tokenize_paragraph, stop_words=list(stopwords))
     vectorizer = TfidfVectorizer(stop_words=list(stopwords))
@@ -226,8 +323,9 @@ def _compute_sentiment_scores_transform_objective_words(cleaned_texts: list, lem
     labels = pd.Series(labels)
     df[label_name] = labels
 
-    filename = file_name_pattern.format('all_tfidf')
+    filename = file_name_pattern.format('obj_tfidf')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
     #     feature_names = tfidf.get_feature_names()
     #     feature_names_dict = {}
     #     for index, feature in enumerate(feature_names):
@@ -255,7 +353,7 @@ def _compute_sentiment_scores_transform_objective_words(cleaned_texts: list, lem
             if has_neg:
                 sentiS *= -1
             sentence_sent.append(sentiS)
-    log.info('{} sentences are processed.'.format(len(sentence_sent)))
+    logging.info('{} sentences are processed.'.format(len(sentence_sent)))
 
     # 3) determine modified sentiment score for objective words
     thresholdW = 0.5
@@ -289,8 +387,9 @@ def _compute_sentiment_scores_transform_objective_words(cleaned_texts: list, lem
     for word in obj_words:
         df[word] *= obj_words[word]
 
-    filename = file_name_pattern.format('all_mul')
+    filename = file_name_pattern.format('obj_mul')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
 
     # 4) construct sentiment scores
     pure_scores = []
@@ -312,8 +411,10 @@ def _compute_sentiment_scores_transform_objective_words(cleaned_texts: list, lem
         pure_scores.append(word_scores)
     df = pd.DataFrame(pure_scores)
     df[label_name] = labels
-    filename = file_name_pattern.format('all_sc')
+    filename = file_name_pattern.format('obj_sc')
     df.to_csv(filename, index=include_index)
+    output_files.append(filename[filename.rindex(os.path.sep) + 1:])
+    return output_files
 
 
 def _get_noun_scores(cleaned_texts: list, word2score: dict) -> list:

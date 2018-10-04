@@ -1,0 +1,16 @@
+database:
+  database: 'mysql'
+  host: '127.0.0.1'
+  port: 3306
+  user: 'root'
+  password: 'welcome'
+  schema: 'CONSUMER_REVIEWS'
+  encrypt_password: false
+
+pos_tagger:
+  jar_dir: 'lib/stanford-postagger'
+  model_dir: 'lib/stanford-postagger/models'
+
+bizrate_dot_com:
+  stores:
+    - 'MidwayUSA'

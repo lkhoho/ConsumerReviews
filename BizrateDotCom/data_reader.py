@@ -2,7 +2,7 @@ import pandas as pd
 from common import config
 from common.exception import UnsupportedFileFormatError
 
-log = config.getLogger(__name__)
+log = config.get_logger(__name__)
 
 
 def readReviewData(filename: str) -> tuple:

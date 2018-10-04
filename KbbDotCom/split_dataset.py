@@ -11,7 +11,7 @@ import scipy.stats as stats
 from pymongo import MongoClient
 from common import config
 
-log = config.getLogger(__name__)
+log = config.get_logger(__name__)
 
 if __name__ == '__main__':
     if input('Start from database (y/n)? ').lower() == 'y':
