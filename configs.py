@@ -84,5 +84,4 @@ class LemmatizationConfig(object):
 
 class FeatureSelectionConfig(object):
     modes = [FeatureSelectionMode.FREQUENCY, FeatureSelectionMode.CHI_SQUARE]
-    # num_features = [10, 25, 50, 100, 200, 500, 1000]
-    num_features = [10, 25]
+    num_features = [10, 25, 50, 100, 200, 500, 1000]

@@ -37,13 +37,16 @@ def feature_selection(lem_mode: LemmatizationMode, feature_mode: FeatureSelectio
     dir_path = os.path.sep.join([working_dir, 'feature_selection'])
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-    regex = r'.+{}_{}_(?P<label>[A-Z_]+)_.+\.csv'.format(str(store), str(lem_mode))
+    regex = r'.+{}_{}_(?P<label>[A-Z_]+)_(?P<nlp>[a-z]+)_.+\.csv'.format(store, str(lem_mode))
     output_files = []
     for file in input_files:
-        df = pd.read_csv(working_dir + os.path.sep + file)
         label = re.match(regex, file).group('label')
+        nlp = re.match(regex, file).group('nlp')
+        df_for_ranking = pd.read_csv(working_dir + os.path.sep + file[:file.rindex(os.path.sep)] + os.path.sep +
+                                     '_'.join([store, str(lem_mode), label, nlp]) + '_tfidf.csv')
+        df = pd.read_csv(working_dir + os.path.sep + file)
         if feature_mode is FeatureSelectionMode.FREQUENCY:
-            selected_features = _frequency_feature_selection(df, label)
+            selected_features = _frequency_feature_selection(df_for_ranking, label)
             for num in num_features:
                 features = selected_features[:num]
                 features.append(label)
@@ -54,12 +57,12 @@ def feature_selection(lem_mode: LemmatizationMode, feature_mode: FeatureSelectio
                 result.to_csv(os.path.sep.join([dir_path, filename]), index=include_index)
         elif feature_mode is FeatureSelectionMode.CHI_SQUARE:
             for num in num_features:
-                selected_df = _chi_square_feature_selection(df, label, num)
-                selected_df[label] = df[label]
+                selected_feature_indices = _chi_square_feature_selection(df_for_ranking, label, num)
+                result = df.iloc[:, selected_feature_indices]
                 filename = file[file.rindex(os.path.sep) + 1:file.rindex('.')] + '_{}_{}.csv'\
                     .format(str(feature_mode), str(num))
                 output_files.append(filename)
-                selected_df.to_csv(os.path.sep.join([dir_path, filename]), index=include_index)
+                result.to_csv(os.path.sep.join([dir_path, filename]), index=include_index)
     return {
         'input_files': input_files,
         'output_files': [os.path.sep.join(['feature_selection', filename]) for filename in output_files]
@@ -76,12 +79,11 @@ def _frequency_feature_selection(data_frame, label) -> list:
     return [x[0] for x in sorted(frequency.items(), key=operator.itemgetter(1), reverse=True)]
 
 
-def _chi_square_feature_selection(data_frame, label, num_features) -> pd.DataFrame:
+def _chi_square_feature_selection(data_frame, label, num_features):
     y = data_frame[label]
     X = data_frame.drop(label, axis=1)
     if num_features > X.shape[1]:
         num_features = 'all'
     chi2_selector = SelectKBest(chi2, k=num_features)
     chi2_selector.fit(X, y)
-    idx_selected = chi2_selector.get_support(indices=True)
-    return data_frame.iloc[:, idx_selected]
+    return chi2_selector.get_support(indices=True)

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.dummy_operator import DummyOperator
+from sklearn.svm import SVC
 
 sys.path.append('/Users/keliu/Developer/python/ConsumerReviews')
 from preprocessing.io import fetch_bizrate_all_fields_by_store
@@ -12,6 +13,7 @@ from preprocessing.split import predefined_range_definitions, split_dataset
 from preprocessing.lemmatization import lemmatize, compute_sentiment_score, clean_undesired
 from preprocessing.nlp import process_all, process_nouns, transform_objective
 from preprocessing.feature_selection import feature_selection
+from modeling import modeling
 from configs import CommonConfig, LemmatizationConfig, FeatureSelectionConfig
 
 
@@ -30,9 +32,8 @@ bizrate_args = {
                          positive_threshold=9, as_label=True)
     ],
     'lemmatization': LemmatizationConfig,
-    'stores': ['MidwayUSA'],
-    'label_name': 'POSNEG',
-    'feature_selection': FeatureSelectionConfig,
+    'stores': ['MidwayUSA', 'Overstock.com'],
+    'feature_selection': FeatureSelectionConfig
 }
 
 default_args = {
@@ -190,3 +191,23 @@ for store in bizrate_args['stores']:
                     'include_index': False
                 })
             feature_start_task >> feature_selection_task >> feature_end_task
+
+    modeling_start_task = DummyOperator(task_id='modeling_start__{}'.format(store), dag=dag)
+    modeling_end_task = DummyOperator(task_id='modeling_end_{}'.format(store), dag=dag)
+
+    feature_end_task >> modeling_start_task
+
+    for lem_mode in bizrate_args['lemmatization'].modes:
+        for feature_mode in bizrate_args['feature_selection'].modes:
+            modeling_svm_task = PythonOperator(task_id='modeling__{}_{}_{}'.format(store, str(lem_mode), 'svm'),
+                                               dag=dag, provide_context=True,
+                                               python_callable=modeling.kfold_cv,
+                                               op_kwargs={
+                                                   'classifier': SVC(kernel='linear', C=1),
+                                                   'scorers': ['accuracy', 'f1', 'roc_auc'],
+                                                   'lem_mode': lem_mode,
+                                                   'feature_mode': feature_mode,
+                                                   'store': store,
+                                                   'working_dir': bizrate_args['common'].working_dir
+                                               })
+            modeling_start_task >> modeling_svm_task >> modeling_end_task
