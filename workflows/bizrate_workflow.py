@@ -135,6 +135,7 @@ for store in bizrate_args['stores']:
     nlp_end_task = DummyOperator(task_id='nlp_end__{}'.format(store), dag=dag)
 
     # [split_task, lemmatize_end_task] >> nlp_start_task
+    over_sampling_task >> nlp_start_task
     lemmatize_end_task >> nlp_start_task
 
     for mode in bizrate_args['lemmatization'].modes:
@@ -199,7 +200,8 @@ for store in bizrate_args['stores']:
 
     for lem_mode in bizrate_args['lemmatization'].modes:
         for feature_mode in bizrate_args['feature_selection'].modes:
-            modeling_svm_task = PythonOperator(task_id='modeling__{}_{}_{}'.format(store, str(lem_mode), 'svm'),
+            modeling_svm_task = PythonOperator(task_id='modeling__{}_{}_{}_{}'
+                                               .format(store, str(lem_mode), str(feature_mode), 'svm'),
                                                dag=dag, provide_context=True,
                                                python_callable=modeling.kfold_cv,
                                                op_kwargs={

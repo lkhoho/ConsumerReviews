@@ -17,12 +17,10 @@ def kfold_cv(classifier, scorers: list, lem_mode: LemmatizationMode, feature_mod
     input_files = context['task_instance'].xcom_pull(
         task_ids='feature_selection__{}_{}_{}'.format(store, str(lem_mode), str(feature_mode)))['output_files']
     logging.info('Input files=' + str(input_files))
-    regex = r'.+{}_{}_(?P<label>[A-Z_]+)_(?P<nlp>\w+_\w+)_\w+_(?P<num_features>\d+)\.csv'\
-        .format(str(store), str(lem_mode))
+    regex = r'.+{}_{}_(?P<label>[A-Z_]+)_(?P<nlp>\w+_\w+)_\w+_(?P<num_features>\d+)\.csv'.format(store, str(lem_mode))
     le = LabelEncoder()
     results = {}
     for file in input_files:
-        logging.info('keliu: file=' + file)
         label = re.match(regex, file).group('label')
         nlp = re.match(regex, file).group('nlp')
         num_features = re.match(regex, file).group('num_features')
@@ -36,9 +34,11 @@ def kfold_cv(classifier, scorers: list, lem_mode: LemmatizationMode, feature_mod
             scores = cross_val_score(classifier, X, y, cv=10, scoring=scorer)
             results.setdefault(base_key, {}).setdefault(scorer, {}).setdefault(str(num_features), {})['raw'] = scores.tolist()
             results[base_key][scorer][str(num_features)]['mean'] = scores.mean()
-    with open(os.path.sep.join([working_dir, 'results.json']), 'w') as fp:
+    filename = '{store}_{lem_mode}_{feature_mode}_{classifier}.json'\
+        .format(store=store, lem_mode=str(lem_mode), feature_mode=str(feature_mode), classifier=classifier)
+    with open(os.path.sep.join([working_dir, filename]), 'w') as fp:
         json.dump(results, fp)
-    # plot_graph(os.path.sep.join([working_dir, 'results.json']), scorers, working_dir)
+    plot_graph(os.path.sep.join([working_dir, filename]), scorers, working_dir)
 
 
 def plot_graph(data_file: str, scorers: list, working_dir: str):
@@ -61,8 +61,3 @@ def plot_graph(data_file: str, scorers: list, working_dir: str):
             plt.title(graph_name)
             fig.savefig(os.path.sep.join([dir_path, graph_name + '_' + scorer + '.png']))
     logging.info('Done plotting!')
-
-
-if __name__ == '__main__':
-    plot_graph('/Users/keliu/consumer_reviews_working/20181002/results.json', ['accuracy', 'f1', 'roc_auc'],
-               '/Users/keliu/consumer_reviews_working/20181002')
