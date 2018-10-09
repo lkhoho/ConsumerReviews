@@ -59,6 +59,7 @@ def feature_selection(lem_mode: LemmatizationMode, feature_mode: FeatureSelectio
             for num in num_features:
                 selected_feature_indices = _chi_square_feature_selection(df_for_ranking, label, num)
                 result = df.iloc[:, selected_feature_indices]
+                result.loc[:, label] = df[label]
                 filename = file[file.rindex(os.path.sep) + 1:file.rindex('.')] + '_{}_{}.csv'\
                     .format(str(feature_mode), str(num))
                 output_files.append(filename)

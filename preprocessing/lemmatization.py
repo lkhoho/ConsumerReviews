@@ -110,7 +110,7 @@ def _lem_by_para(pids: list, texts: list, lem_config, tagger, stopwords, verbose
 def compute_sentiment_score(sentence_sep, mode, store, working_dir, **context):
     exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    input_file = context['task_instance'].xcom_pull(task_ids=context['task'].upstream_task_ids[-1])['output_files'][0]
+    input_file = context['task_instance'].xcom_pull(task_ids='lemmatize__{}_{}'.format(store, str(mode)))['output_files'][0]
     logging.info('Compute sentiment score on file=' + input_file)
     with open(working_dir + os.path.sep + input_file) as fp:
         json_file = json.load(fp)
@@ -163,7 +163,7 @@ def _sentiment_score_helper(texts, sentence_sep, batch_size=100):
 def clean_undesired(sentence_sep, mode, store, working_dir, **context):
     exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    input_file = context['task_instance'].xcom_pull(task_ids=context['task'].upstream_task_ids[-1])['output_files'][0]
+    input_file = context['task_instance'].xcom_pull(task_ids='lemmatize__{}_{}'.format(store, str(mode)))['output_files'][0]
     logging.info('Clean undesired terms from file=' + input_file)
     with open(working_dir + os.path.sep + input_file) as fp:
         json_file = json.load(fp)

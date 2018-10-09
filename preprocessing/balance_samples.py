@@ -18,7 +18,7 @@ def over_sampling_reviews(target_fields: list, store, working_dir, include_index
 
     exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    input_file = context['task_instance'].xcom_pull(task_ids=context['task'].upstream_task_ids[-1])['output_files'][0]
+    input_file = context['task_instance'].xcom_pull(task_ids='curate__{}'.format(store))['output_files'][0]
     logging.info('Input file=' + input_file)
     logging.info('Target fields=' + str(target_fields))
     df = pd.read_csv(working_dir + os.sep + input_file)

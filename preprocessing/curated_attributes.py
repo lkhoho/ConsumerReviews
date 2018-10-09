@@ -87,7 +87,7 @@ def _calculate_label(dataframe: pd.DataFrame, fields_to_calculate: str,
 def compute_curated_attributes(attributes: List[CuratedAttribute], store, working_dir, include_index, **context):
     exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
-    input_file = context['task_instance'].xcom_pull(task_ids=context['task'].upstream_task_ids[-1])['output_files'][0]
+    input_file = context['task_instance'].xcom_pull(task_ids='fetch__{}'.format(store))['output_files'][0]
     logging.info('Input file=' + input_file)
     df = pd.read_csv(working_dir + os.sep + input_file)
     for attribute in attributes:
