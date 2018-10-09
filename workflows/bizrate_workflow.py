@@ -1,11 +1,12 @@
 import sys
+import os
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.dummy_operator import DummyOperator
 from sklearn.svm import SVC
 
-sys.path.append('/Users/keliu/Developer/python/ConsumerReviews')
+sys.path.append(os.getenv('WSHOME', '/Users/keliu/Developer/python/ConsumerReviews'))
 from preprocessing.io import fetch_bizrate_all_fields_by_store
 from preprocessing.balance_samples import over_sampling_reviews
 from preprocessing.curated_attributes import site_experience_ratings, CuratedAttribute, compute_curated_attributes
