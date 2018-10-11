@@ -207,6 +207,7 @@ for store in bizrate_args['stores']:
                                                python_callable=modeling.kfold_cv,
                                                op_kwargs={
                                                    'classifier': SVC(kernel='linear', C=1),
+                                                   'classifier_name': 'svm',
                                                    'scorers': ['accuracy', 'f1', 'roc_auc'],
                                                    'lem_mode': lem_mode,
                                                    'feature_mode': feature_mode,

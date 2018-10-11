@@ -10,8 +10,8 @@ from preprocessing.lemmatization import LemmatizationMode
 from preprocessing.feature_selection import FeatureSelectionMode
 
 
-def kfold_cv(classifier, scorers: list, lem_mode: LemmatizationMode, feature_mode: FeatureSelectionMode,
-             store: str, working_dir: str, **context):
+def kfold_cv(classifier, classifier_name: str, scorers: list, lem_mode: LemmatizationMode,
+             feature_mode: FeatureSelectionMode, store: str, working_dir: str, **context):
     exec_date = context['execution_date'].strftime('%Y%m%d')
     working_dir += os.path.sep + exec_date
     input_files = context['task_instance'].xcom_pull(
@@ -19,12 +19,13 @@ def kfold_cv(classifier, scorers: list, lem_mode: LemmatizationMode, feature_mod
     logging.info('Input files=' + str(input_files))
     regex = r'.+{}_{}_(?P<label>[A-Z_]+)_(?P<nlp>\w+_\w+)_\w+_(?P<num_features>\d+)\.csv'.format(store, str(lem_mode))
     le = LabelEncoder()
+
     results = {}
     for file in input_files:
         label = re.match(regex, file).group('label')
         nlp = re.match(regex, file).group('nlp')
         num_features = re.match(regex, file).group('num_features')
-        logging.info('keliu: label={}, nlp={}, num_features={}'.format(label, nlp, str(num_features)))
+        logging.info('label={}, nlp={}, num_features={}'.format(label, nlp, str(num_features)))
 
         base_key = '__'.join([store, str(lem_mode), label, nlp, str(feature_mode)])
         df = pd.read_csv(working_dir + os.path.sep + file)
@@ -34,8 +35,9 @@ def kfold_cv(classifier, scorers: list, lem_mode: LemmatizationMode, feature_mod
             scores = cross_val_score(classifier, X, y, cv=10, scoring=scorer)
             results.setdefault(base_key, {}).setdefault(scorer, {}).setdefault(str(num_features), {})['raw'] = scores.tolist()
             results[base_key][scorer][str(num_features)]['mean'] = scores.mean()
-    filename = '{store}_{lem_mode}_{feature_mode}_{classifier}.json'\
-        .format(store=store, lem_mode=str(lem_mode), feature_mode=str(feature_mode), classifier=classifier)
+
+    filename = '{store}_{lem_mode}_{feature_mode}_{classifier_name}.json'\
+        .format(store=store, lem_mode=str(lem_mode), feature_mode=str(feature_mode), classifier_name=classifier_name)
     with open(os.path.sep.join([working_dir, filename]), 'w') as fp:
         json.dump(results, fp)
     plot_graph(os.path.sep.join([working_dir, filename]), scorers, working_dir)
