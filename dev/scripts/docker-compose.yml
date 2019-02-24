@@ -1,10 +1,20 @@
 version: "3.6"
 
 services:
-  mysql:
-    image: lkhoho/mysql
+  postgres:
+    image: lkhoho/postgres:latest
     ports:
-      - '3306:3306'
+      - 5432:5432
     volumes:
-      - $DOCKER_DATA_ROOT/mysql:/var/lib/mysql
-      - $WSHOME/dev/conf/mysql:/etc/mysql/conf.d
+      - $DOCKER_DATA_ROOT/postgres:/var/lib/postgresql/data
+
+  mongodb:
+    image: lkhoho/mongodb:latest
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=welcome
+    ports:
+      - 27017:27017
+      - 28017:28017
+    volumes:
+      - $DOCKER_DATA_ROOT/mongodb:/data/db
