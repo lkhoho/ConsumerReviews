@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 import scrapy
-from ..items import BizRateReview
+from ..items.bizrate import BizRateReview
 
 
 class BizrateReviewSpider(scrapy.Spider):

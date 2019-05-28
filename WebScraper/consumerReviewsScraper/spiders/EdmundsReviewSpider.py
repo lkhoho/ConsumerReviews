@@ -2,7 +2,7 @@ import re
 from urllib import request
 from html.parser import HTMLParser
 import scrapy
-from ..items import EdmundsReviewItem
+from ..items.edmunds import EdmundsReviewItem
 
 
 class EdmundsReviewHTMLParser(HTMLParser):

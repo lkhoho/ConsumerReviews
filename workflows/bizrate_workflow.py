@@ -59,7 +59,7 @@ for store in bizrate_args['stores']:
     fetch_task = PythonOperator(task_id='fetch__{}'.format(store), dag=dag, provide_context=True,
                                 python_callable=fetch_bizrate_all_fields_by_store,
                                 op_kwargs={
-                                    'db_conn_id': 'consumer_reviews_default',
+                                    'db_conn_id': 'consumer_reviews_mongo',
                                     'store': store,
                                     'working_dir': bizrate_args['common'].working_dir,
                                     'include_index': False

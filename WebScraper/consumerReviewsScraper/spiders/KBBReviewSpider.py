@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 import uuid
 import scrapy
-from ..items import KBBReviewItem
+from ..items.kbb import KBBReviewItem
 
 
 class KBBReviewSpider(scrapy.Spider):

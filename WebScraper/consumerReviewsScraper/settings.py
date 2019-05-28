@@ -15,13 +15,15 @@ SPIDER_MODULES = ['consumerReviewsScraper.spiders']
 NEWSPIDER_MODULE = 'consumerReviewsScraper.spiders'
 
 LOG_LEVEL = 'INFO'
+# LOG_FILE = 'ConsumerReviewsScrapy.log'
+LOG_DATEFORMAT = '%Y%m%d %H:%M:%S'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'scrapy_reviews (+http://www.yourdomain.com)'
 #USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/602.2.14 (KHTML, like Gecko) Version/10.0.1 Safari/602.2.14"
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False  # some website does not allow scrape user page
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -31,7 +33,7 @@ ROBOTSTXT_OBEY = True
 # See also autothrottle settings and docs
 # DOWNLOAD_DELAY = 2
 # The download delay setting will honor only one of:
-#CONCURRENT_REQUESTS_PER_DOMAIN = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 4
 # CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
@@ -67,7 +69,9 @@ ROBOTSTXT_OBEY = True
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'consumerReviewsScraper.pipelines.SaveToMongoDb': 100,
+    'consumerReviewsScraper.pipelines.SaveXcarItemsPipeline': 100,
+    # 'consumerReviewsScraper.pipelines.SaveToSqlitePipeline': 100
+    # 'consumerReviewsScraper.pipelines.SaveToMongoDb': 100,
     # 'scrapy_reviews.pipelines.SaveRawItemPipeline': 100,
     # 'scrapy_reviews.pipelines.RemoveStopwordsPipeline': 200,
     # 'scrapy_reviews.pipelines.TokenizationPipeline': 300,
@@ -97,3 +101,6 @@ ITEM_PIPELINES = {
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 # FEED_EXPORT_FIELDS = ["content"]
+
+DB_PROVIDER = 'sqlite'
+DB_NAME = '/Users/keliu/consumer_reviews_working/consumer_reviews.db'

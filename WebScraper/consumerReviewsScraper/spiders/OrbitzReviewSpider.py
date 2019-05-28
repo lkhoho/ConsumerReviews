@@ -1,6 +1,6 @@
 import re
 import scrapy
-from ..items import OrbitzReviewItem
+from ..items.orbitz import OrbitzReviewItem
 
 
 class OrbitzReviewSpider(scrapy.Spider):

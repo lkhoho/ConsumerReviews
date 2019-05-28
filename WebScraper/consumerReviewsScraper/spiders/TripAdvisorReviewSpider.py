@@ -1,6 +1,5 @@
-import re
 import scrapy
-from ..items import TripAdvisorReviewItem
+from ..items.tripadvisor import TripAdvisorReviewItem
 
 
 class TripAdvisorReviewSpider(scrapy.Spider):

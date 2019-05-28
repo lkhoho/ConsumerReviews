@@ -1,14 +1,127 @@
 # -*- coding: utf-8 -*-
 
 import re
-import simplejson
+import json
 import csv
 import logging
-import pymongo as mongo
-from stemming.porter2 import stem
+import sqlite3
+from pony.orm import db_session, commit, ObjectNotFound
+# import pymongo as mongo
+# from stemming.porter2 import stem
 from scrapy.exceptions import DropItem
 from scrapy.utils.serialize import ScrapyJSONEncoder
-from .items import KBBReviewItem, EdmundsReviewItem, OrbitzReviewItem
+from .dao import *
+from .settings import DB_PROVIDER, DB_NAME
+from .models import db
+from .items.base import *
+from .items.kbb import *
+from .items.edmunds import *
+from .items.orbitz import *
+from .items.dianping import *
+from .items.xcar import *
+
+
+class SaveXcarItemsPipeline(object):
+    """ Save items from xcar.com to Sqlite. """
+
+    def __init__(self):
+        self.db = db
+
+    def open_spider(self, spider):
+        # self.db.bind(provider=DB_PROVIDER, filename=DB_NAME, create_db=False)
+        spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
+
+    def close_spider(self, spider):
+        spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
+
+    @db_session
+    def process_item(self, item, spider):
+        item_type = type(item)
+        entity = None
+        if item_type == XcarForum:
+            try:
+                existing = XcarForumEntity[item.get_id()]
+                existing.set(**{
+                    'name': item['name'],
+                    'created_datetime': item['created_datetime']})
+            except ObjectNotFound:
+                entity = item.get_ORM_entity()
+        elif item_type == XcarThread:
+            try:
+                existing = XcarThreadEntity[item.get_id()]
+                existing.set(**{
+                    'title': item['title'],
+                    'forum': item['forum'],
+                    'num_views': item['num_views'],
+                    'num_replies': item['num_replies'],
+                    'is_elite': item['is_elite'],
+                    'created_datetime': item['created_datetime']})
+            except ObjectNotFound:
+                entity = item.get_ORM_entity()
+        elif item_type == XcarUser:
+            user = XcarUserEntity.upsert(id=item['id'], name=item['name'], gender=item['gender'],
+                                         avatar_url=item['avatar_url'], register_date=item['register_date'],
+                                         location=item['location'], coin=item['coin'], rank=item['rank'],
+                                         num_follows=item['num_follows'], num_fans=item['num_fans'],
+                                         num_posts=item['num_posts'], created_datetime=item['created_datetime'],
+                                         manage=item['manage'])
+        elif item_type == XcarPost:
+            post = XcarPostEntity.upsert(id=item['id'], author=item['author'], content=item['content'],
+                                         publish_datetime=item['publish_datetime'],
+                                         created_datetime=item['created_datetime'], is_flag=item['is_flag'],
+                                         thread=item['thread'])
+            thread = XcarThreadEntity[item['thread']]
+            thread.posts.add(post)
+        else:
+            spider.logger.warn('Unknown item scraped.')
+        commit()
+        return item
+
+
+class SaveDianpingItemsPipeline(object):
+    def __init__(self):
+        self.db_name = '/Users/keliu/consumer_reviews_working/consumer_reviews.db'
+        self.conn = None
+        self.db_entity_dao = None
+
+    def open_spider(self, spider):
+        self.conn = sqlite3.connect(self.db_name)
+        spider.logger.info('Connected to Sqlite file %s' % self.db_name)
+
+    def close_spider(self, spider):
+        self.conn.close()
+        spider.logger.info('Disconnected to Sqlite file %s ' % self.db_name)
+
+    def process_item(self, item, spider):
+        if isinstance(item, DatabaseItem):
+            if isinstance(item, DPCommunity):
+                self.db_entity_dao = DPCommunityDao(self.conn)
+                self.db_entity_dao.upsert(item)
+                for manager in item['managers']:
+                    self.conn.execute('insert or replace into dp_community_manager values (?, ?, ?)',
+                                      (manager, item['city'], item['name']))
+                self.conn.commit()
+            elif isinstance(item, DPReview):
+                self.db_entity_dao = DPReviewDao(self.conn)
+                self.db_entity_dao.upsert(item)
+                self.conn.execute('insert or replace into dp_topic_review values (?, ?)',
+                                  (item['topic_id'], item['id']))
+                self.conn.commit()
+            elif isinstance(item, DPBadge):
+                self.db_entity_dao = DPBadgeDao(self.conn)
+                self.db_entity_dao.upsert(item)
+            elif isinstance(item, DPBonus):
+                self.db_entity_dao = DPBonusDao(self.conn)
+                self.db_entity_dao.upsert(item)
+            elif isinstance(item, DPMember):
+                self.db_entity_dao = DPMemberDao(self.conn)
+                self.db_entity_dao.upsert(item)
+            elif isinstance(item, DPTopic):
+                self.db_entity_dao = DPTopicDao(self.conn)
+                self.db_entity_dao.upsert(item)
+        else:
+            raise NotImplementedError('Only support database item for now!')
+        return item
 
 
 class TokenizationPipeline(object):
@@ -71,59 +184,59 @@ class RemoveStopwordsPipeline(object):
         return item
 
 
-class StemmingReviewsPipeline(object):
-    """ Stem features. """
+# class StemmingReviewsPipeline(object):
+#     """ Stem features. """
+#
+#     def open_spider(self, spider):
+#         pass
+#
+#     def close_spider(self, spider):
+#         pass
+#
+#     def process_item(self, item, spider):
+#         for i in range(len(item["content"])):
+#             word = item["content"][i]
+#             item["content"][i] = stem(word)
+#         return item
 
-    def open_spider(self, spider):
-        pass
 
-    def close_spider(self, spider):
-        pass
-
-    def process_item(self, item, spider):
-        for i in range(len(item["content"])):
-            word = item["content"][i]
-            item["content"][i] = stem(word)
-        return item
-
-
-class SaveToMongoDb(object):
-    """
-    Persist items into MongoDB as documents.
-    """
-
-    def __init__(self):
-        self.conn_str = 'mongodb://lkhoho:56b2AmDI@lkhoho-cluster-shard-00-00-d12bg.mongodb.net:27017,lkhoho-cluster-shard-00-01-d12bg.mongodb.net:27017,lkhoho-cluster-shard-00-02-d12bg.mongodb.net:27017/admin?replicaSet=lkhoho-cluster-shard-0&ssl=true'
-        self.client = None
-        self.dbName = 'ConsumerReviews'
-        self.collectionName = None
-        self.collection = None  # document collection
-        self.nCurrentDocuments = 0  # current document count
-
-    def open_spider(self, spider):
-        position = spider.reviewSource.rfind('.')
-        self.collectionName = spider.reviewSource[:position]
-        self.client = mongo.MongoClient()
-        spider.logger.info('Open connection to database [{}] in MongoDB.'.format(self.dbName))
-        self.collection = self.client[self.dbName][self.collectionName]
-        self.nCurrentDocuments = self.collection.count()
-        assert self.nCurrentDocuments == self.nCurrentDocuments, 'Error: queried documents count != documents count'
-        spider.logger.info('Database {}, collection {} has {} documents for now.'.format(
-            self.dbName, self.collectionName, self.nCurrentDocuments))
-
-    def close_spider(self, spider):
-        self.client.close()
-        nItems = self.collection.count()
-        spider.logger.info('Close connection to database [{}] in MongoDB. {} new items are persisted.'.format(
-            self.dbName, nItems - self.nCurrentDocuments))
-
-    def process_item(self, item, spider):
-        if not self.collection.find_one({'id': item['id']}):
-            result = self.collection.insert_one(item)
-            spider.logger.info('Item inserted as {}.'.format(result.inserted_id))
-            return item
-        else:
-            raise DropItem("Item is already in MongoDB. Will be dropped.")
+# class SaveToMongoDb(object):
+#     """
+#     Persist items into MongoDB as documents.
+#     """
+#
+#     def __init__(self):
+#         self.conn_str = 'mongodb://lkhoho:56b2AmDI@lkhoho-cluster-shard-00-00-d12bg.mongodb.net:27017,lkhoho-cluster-shard-00-01-d12bg.mongodb.net:27017,lkhoho-cluster-shard-00-02-d12bg.mongodb.net:27017/admin?replicaSet=lkhoho-cluster-shard-0&ssl=true'
+#         self.client = None
+#         self.dbName = 'ConsumerReviews'
+#         self.collectionName = None
+#         self.collection = None  # document collection
+#         self.nCurrentDocuments = 0  # current document count
+#
+#     def open_spider(self, spider):
+#         position = spider.reviewSource.rfind('.')
+#         self.collectionName = spider.reviewSource[:position]
+#         self.client = mongo.MongoClient()
+#         spider.logger.info('Open connection to database [{}] in MongoDB.'.format(self.dbName))
+#         self.collection = self.client[self.dbName][self.collectionName]
+#         self.nCurrentDocuments = self.collection.count()
+#         assert self.nCurrentDocuments == self.nCurrentDocuments, 'Error: queried documents count != documents count'
+#         spider.logger.info('Database {}, collection {} has {} documents for now.'.format(
+#             self.dbName, self.collectionName, self.nCurrentDocuments))
+#
+#     def close_spider(self, spider):
+#         self.client.close()
+#         nItems = self.collection.count()
+#         spider.logger.info('Close connection to database [{}] in MongoDB. {} new items are persisted.'.format(
+#             self.dbName, nItems - self.nCurrentDocuments))
+#
+#     def process_item(self, item, spider):
+#         if not self.collection.find_one({'id': item['id']}):
+#             result = self.collection.insert_one(item)
+#             spider.logger.info('Item inserted as {}.'.format(result.inserted_id))
+#             return item
+#         else:
+#             raise DropItem("Item is already in MongoDB. Will be dropped.")
 
 
 class SaveRawItemPipeline(object):
@@ -143,7 +256,7 @@ class SaveRawItemPipeline(object):
             self.logger.error("Error: opening JSON file {} failed. Exception: {}".format(filename, exc))
 
     def close_spider(self, spider):
-        simplejson.dump(self.items, self.fp)
+        json.dump(self.items, self.fp)
         self.fp.close()
 
     def process_item(self, item, spider):
