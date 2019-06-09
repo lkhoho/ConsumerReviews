@@ -1,29 +1,34 @@
 import scrapy
 from typing import Union, Dict
+from sqlite3 import Connection
 from ..models import *
-from .base import DatabaseItem
 
 
-class XcarForum(DatabaseItem):
+class XcarForum(scrapy.Item):
     """ 论坛 """
 
-    id = scrapy.Field()
+    fid = scrapy.Field()
     name = scrapy.Field()
     created_datetime = scrapy.Field()
     threads = scrapy.Field()
     managers = scrapy.Field()
 
-    def get_id(self) -> Union[int, Dict[str, str]]:
-        return self['id']
+    @property
+    def field_values(self):
+        return self['fid'], self['name'], self['created_datetime']
 
-    def get_ORM_entity(self):
-        return XcarForumEntity(
-            id=self.get_id(),
-            name=self['name'],
-            created_datetime=self['created_datetime'])
+    def upsert(self, conn: Connection):
+        conn.execute('INSERT INTO xcar_forum(`fid`, `name`, `created_datetime`) VALUES (?, ?, ?) '
+                     'ON CONFLICT(`fid`) DO UPDATE SET `name`=?, `created_datetime`=?',
+                     (*self.field_values, self.field_values[1], self.field_values[2]))
+        conn.commit()
+
+    def delete(self, conn: Connection):
+        conn.execute('DELETE FROM xcar_forum WHERE `fid`=?', (self['fid'],))
+        conn.commit()
 
 
-class XcarThread(DatabaseItem):
+class XcarThread(scrapy.Item):
     """ 帖子 """
 
     id = scrapy.Field()
@@ -33,6 +38,18 @@ class XcarThread(DatabaseItem):
     num_replies = scrapy.Field()
     is_elite = scrapy.Field()
     created_datetime = scrapy.Field()
+
+    def upsert(self, conn: Connection):
+        field_values = [self['id'], self['title'], self['forum'], self['num_views'], self['num_replies'],
+                        self['is_elite'], self['created_datetime']]
+        conn.execute('INSERT INTO xcar_thread VALUES(?, ?, ?, ?, ? ,?, ?) ON CONFLICT(`tid`) DO UPDATE SET '
+                     '`tid`=?, `title`=?, `forum`=?, `num_views`=?, `num_replies`=?, `is_elite`=?, '
+                     '`created_datetime`=?', *field_values, *field_values)
+        conn.commit()
+
+    def delete(self, conn: Connection):
+        conn.execute('DELETE FROM ? WHERE `tid`=?', self._table_, self['id'])
+        conn.commit()
 
     def get_id(self) -> Union[int, Dict[str, str]]:
         return self['id']
@@ -48,16 +65,33 @@ class XcarThread(DatabaseItem):
             created_datetime=self['created_datetime'])
 
 
-class XcarPost(DatabaseItem):
+class XcarPost(scrapy.Item):
     """ 帖子楼层（评论） """
 
-    id = scrapy.Field()
+    pid = scrapy.Field()
     author = scrapy.Field()
     content = scrapy.Field()
     publish_datetime = scrapy.Field()
     created_datetime = scrapy.Field()
     is_flag = scrapy.Field()
     thread = scrapy.Field()
+
+    @property
+    def field_values(self):
+        return self['pid'], self['author'], self['content'], self['publish_datetime'], self['created_datetime'], \
+               self['is_flag'], self['thread']
+
+    def upsert(self, conn: Connection):
+        conn.execute('INSERT INTO xcar_post(`pid`, `author`, `content`, `publish_datetime`, `created_datetime`, '
+                     '`is_flag`, `thread`) VALUES(?, ?, ?, ?, ?, ?, ?) ON CONFLICT(`pid`) DO UPDATE SET '
+                     '`author`=?, `content`=?, `publish_datetime`=?, `created_datetime`=?, `is_flag`=?, `thread`=?',
+                     (*self.field_values, self.field_values[1], self.field_values[2], self.field_values[3],
+                      self.field_values[4], self.field_values[5], self.field_values[6]))
+        conn.commit()
+
+    def delete(self, conn: Connection):
+        conn.execute('DELETE FROM xcar_post WHERE `pid`=?', (self['pid'],))
+        conn.commit()
 
     def get_id(self) -> Union[int, Dict[str, str]]:
         return self['id']
@@ -73,7 +107,7 @@ class XcarPost(DatabaseItem):
             thread=self['thread'])
 
 
-class XcarUser(DatabaseItem):
+class XcarUser(scrapy.Item):
     """ 会员 """
 
     id = scrapy.Field()
@@ -89,6 +123,22 @@ class XcarUser(DatabaseItem):
     num_posts = scrapy.Field()  # 发帖数
     created_datetime = scrapy.Field()
     manage = scrapy.Field()
+
+    _table_ = 'xcar_user'
+
+    def upsert(self, conn: Connection):
+        field_values = [self['id'], self['name'], self['gender'], self['avatar_url'], self['register_date'],
+                        self['location'], self['coin'], self['rank'], self['num_follows'], self['num_fans'],
+                        self['num_posts'], self['created_datetime'], self['manage']]
+        conn.execute('INSERT INTO ? VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(`uid`) UPDATE SET '
+                     '`uid`=?, `name`=?, `gender`=?, `avatar_url`=?, `register_date`=?, `location`=?, `coin`=?, '
+                     '`rank`=?, `num_follows`=?, `num_fans`=?, `num_posts`=?, `created_datetime`=?, `manage`=?',
+                     self._table_, *field_values, *field_values)
+        conn.commit()
+
+    def delete(self, conn: Connection):
+        conn.execute('DELETE FROM ? WHERE `uid`=?', self._table_, self['id'])
+        conn.commit()
 
     def get_id(self) -> Union[int, Dict[str, str]]:
         return self['id']

@@ -1,22 +1,4 @@
 import scrapy
-from typing import Any, Union, Dict
-from abc import ABC, abstractmethod
-
-
-class HasId(ABC):
-    @abstractmethod
-    def get_id(self) -> Union[int, Dict[str, str]]:
-        pass
-
-
-class DatabaseItem(scrapy.Item, HasId):
-    """ Base class for database items. """
-
-    def get_id(self) -> Union[int, Dict[str, str]]:
-        pass
-
-    def get_ORM_entity(self):
-        pass
 
 
 class MongoDbDocument(scrapy.Item):
