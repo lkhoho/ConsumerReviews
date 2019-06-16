@@ -5,76 +5,33 @@ import json
 import csv
 import logging
 import sqlite3
-from pony.orm import db_session, commit, ObjectNotFound
 # import pymongo as mongo
 # from stemming.porter2 import stem
-from scrapy.exceptions import DropItem
+# from scrapy.exceptions import DropItem
 from scrapy.utils.serialize import ScrapyJSONEncoder
-from .dao import *
-from .settings import DB_PROVIDER, DB_NAME
-from .models import db
-from .items.base import *
+from .settings import DB_NAME
 from .items.kbb import *
 from .items.edmunds import *
 from .items.orbitz import *
 from .items.dianping import *
-from .items.xcar import *
 
 
 class SaveXcarItemsPipeline(object):
-    """ Save items from xcar.com to Sqlite. """
+    """ Save items of xcar.com to Sqlite 3. """
 
     def __init__(self):
-        self.db = db
+        self.conn = None
 
     def open_spider(self, spider):
-        # self.db.bind(provider=DB_PROVIDER, filename=DB_NAME, create_db=False)
+        self.conn = sqlite3.connect(DB_NAME)
         spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
 
     def close_spider(self, spider):
+        self.conn.close()
         spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
 
-    @db_session
     def process_item(self, item, spider):
-        item_type = type(item)
-        entity = None
-        if item_type == XcarForum:
-            try:
-                existing = XcarForumEntity[item.get_id()]
-                existing.set(**{
-                    'name': item['name'],
-                    'created_datetime': item['created_datetime']})
-            except ObjectNotFound:
-                entity = item.get_ORM_entity()
-        elif item_type == XcarThread:
-            try:
-                existing = XcarThreadEntity[item.get_id()]
-                existing.set(**{
-                    'title': item['title'],
-                    'forum': item['forum'],
-                    'num_views': item['num_views'],
-                    'num_replies': item['num_replies'],
-                    'is_elite': item['is_elite'],
-                    'created_datetime': item['created_datetime']})
-            except ObjectNotFound:
-                entity = item.get_ORM_entity()
-        elif item_type == XcarUser:
-            user = XcarUserEntity.upsert(id=item['id'], name=item['name'], gender=item['gender'],
-                                         avatar_url=item['avatar_url'], register_date=item['register_date'],
-                                         location=item['location'], coin=item['coin'], rank=item['rank'],
-                                         num_follows=item['num_follows'], num_fans=item['num_fans'],
-                                         num_posts=item['num_posts'], created_datetime=item['created_datetime'],
-                                         manage=item['manage'])
-        elif item_type == XcarPost:
-            post = XcarPostEntity.upsert(id=item['id'], author=item['author'], content=item['content'],
-                                         publish_datetime=item['publish_datetime'],
-                                         created_datetime=item['created_datetime'], is_flag=item['is_flag'],
-                                         thread=item['thread'])
-            thread = XcarThreadEntity[item['thread']]
-            thread.posts.add(post)
-        else:
-            spider.logger.warn('Unknown item scraped.')
-        commit()
+        item.upsert(self.conn)
         return item
 
 
@@ -93,34 +50,7 @@ class SaveDianpingItemsPipeline(object):
         spider.logger.info('Disconnected to Sqlite file %s ' % self.db_name)
 
     def process_item(self, item, spider):
-        if isinstance(item, DatabaseItem):
-            if isinstance(item, DPCommunity):
-                self.db_entity_dao = DPCommunityDao(self.conn)
-                self.db_entity_dao.upsert(item)
-                for manager in item['managers']:
-                    self.conn.execute('insert or replace into dp_community_manager values (?, ?, ?)',
-                                      (manager, item['city'], item['name']))
-                self.conn.commit()
-            elif isinstance(item, DPReview):
-                self.db_entity_dao = DPReviewDao(self.conn)
-                self.db_entity_dao.upsert(item)
-                self.conn.execute('insert or replace into dp_topic_review values (?, ?)',
-                                  (item['topic_id'], item['id']))
-                self.conn.commit()
-            elif isinstance(item, DPBadge):
-                self.db_entity_dao = DPBadgeDao(self.conn)
-                self.db_entity_dao.upsert(item)
-            elif isinstance(item, DPBonus):
-                self.db_entity_dao = DPBonusDao(self.conn)
-                self.db_entity_dao.upsert(item)
-            elif isinstance(item, DPMember):
-                self.db_entity_dao = DPMemberDao(self.conn)
-                self.db_entity_dao.upsert(item)
-            elif isinstance(item, DPTopic):
-                self.db_entity_dao = DPTopicDao(self.conn)
-                self.db_entity_dao.upsert(item)
-        else:
-            raise NotImplementedError('Only support database item for now!')
+        item.upsert(self.conn)
         return item
 
 

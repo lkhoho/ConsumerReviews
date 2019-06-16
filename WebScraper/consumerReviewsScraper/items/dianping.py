@@ -1,9 +1,8 @@
 import scrapy
 from typing import Union, Dict
-from .base import DatabaseItem
 
 
-class DPBadge(DatabaseItem):
+class DPBadge(scrapy.Item):
     """ 徽章 """
     table_name = 'dp_badge'
     id = scrapy.Field()
@@ -19,7 +18,7 @@ class DPBadge(DatabaseItem):
         return self['id']
 
 
-class DPCommunity(DatabaseItem):
+class DPCommunity(scrapy.Item):
     """ 社区部落 """
     table_name = 'dp_community'
     city = scrapy.Field()
@@ -35,7 +34,7 @@ class DPCommunity(DatabaseItem):
         return {'city': self['city'], 'name': self['name']}
 
 
-class DPMember(DatabaseItem):
+class DPMember(scrapy.Item):
     """ 会员 """
     table_name = 'dp_member'
     id = scrapy.Field()
@@ -63,7 +62,7 @@ class DPMember(DatabaseItem):
         return self['id']
 
 
-class DPReview(DatabaseItem):
+class DPReview(scrapy.Item):
     """ 评论（包含餐馆、帖子等） """
     table_name = 'dp_review'
     id = scrapy.Field()
@@ -79,7 +78,7 @@ class DPReview(DatabaseItem):
         return self['id']
 
 
-class DPTopic(DatabaseItem):
+class DPTopic(scrapy.Item):
     """ 社区帖子 """
     table_name = 'dp_topic'
     id = scrapy.Field()
@@ -99,7 +98,7 @@ class DPTopic(DatabaseItem):
         return self['id']
 
 
-class DPBonus(DatabaseItem):
+class DPBonus(scrapy.Item):
     """ 社区帖子加分 """
     table_name = 'dp_bonus'
     topic_id = scrapy.Field()  # 帖子id

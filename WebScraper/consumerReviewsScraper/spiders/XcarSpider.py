@@ -113,6 +113,7 @@ class XcarForumSpider(CrawlSpider):
 
     start_urls = [
         'http://www.xcar.com.cn/bbs/forumdisplay.php?fid=738&page=1',
+        'http://www.xcar.com.cn/bbs/forumdisplay.php?fid=741&page=1'
     ]
 
     # fake user agent
@@ -140,31 +141,31 @@ class XcarForumSpider(CrawlSpider):
         # if response.xpath("//i[@class='icon-logo']").extract_first() is None:
         #     yield Request(url=response.url, cookies=, dont_filter=True)
         forum = XcarForum()
-        forum['id'] = int(re.findall(r'http://www.xcar.com.cn/bbs/forumdisplay.php\?fid=(\d+).*', response.url)[0])
+        forum['fid'] = int(re.findall(r'http://www.xcar.com.cn/bbs/forumdisplay.php\?fid=(\d+).*', response.url)[0])
         forum['name'] = response.xpath("//div[@class='forum-tit']/h1/text()").get().strip()
         manager_urls = response.xpath("//ul[@class='userinfo']/li[1]/a/@href").getall()
         forum['managers'] = [int(re.findall(r'.*uid=(\d+).*', url)[0]) for url in manager_urls]
-        forum['created_datetime'] = datetime.datetime.utcnow()
+        forum['created_datetime'] = datetime.utcnow()
         yield forum
 
         for url in manager_urls:
             yield Request(url=url, callback=self.parse_user,
                           meta={
-                              'manage': forum['id']},
+                              'manage': forum['fid']},
                           headers={
                               'User-Agent': self.user_agent.random,
                               'Host': 'my.xcar.com.cn',
                               'Referer': response.url},
                           cookies={
-                              '_discuz_uid': 2330156,
-                              'bbs_auth': 'XUu25gYrpkdcMHZz75IWsw02t3uD7B7qOCHe6MfYVisOjjGp47tc%2BobRKUGlaltBCQ',
+                              '_discuz_uid': 17502059,
+                              'bbs_auth': 'VxvjtVV4%2BEBYZi9w75NEsF45437ZvB%2FrPnXfu5bfVSsNizKksOtXpobRKkWjalhECjU',
                               'bbs_cookietime': 31536000,
-                              'bbs_visitedfid': '738D739',
-                              '_fuv': 5582030787697,
-                              '_fwck_www': 'aa4b67e0015de2b06bc2393b426c0615',
-                              '_appuv_www': 'e88867bc192155f54ed3eb44d01447d3',
-                              '_fwck_my': '98f978fcb65551cf08c31f88fa75296b',
-                              '_appuv_my': 'd626e4ebed451b4c28b672cdb99b0d0a'})
+                              'bbs_visitedfid': '741D738D39',
+                              '_fuv': 5603160404768,
+                              '_fwck_www': '7b015af75e43be59766bb70bb0b9f7fe',
+                              '_appuv_www': 'a9a3380ae18b10bfc7685cd81f612bf6',
+                              '_fwck_my': '5ccd62d46ca3cf8378abc412a985f3b5',
+                              '_appuv_my': '610527e88f1d625fe42138e789c893b9'})
 
         for thread in response.xpath("//dl[@class='list_dl']"):
             url = thread.xpath("dt/p[@class='thenomal']/a[@class='titlink']/@href").get()
@@ -195,7 +196,7 @@ class XcarForumSpider(CrawlSpider):
         user['coin'] = response.meta.get('coin', None)
         user['register_date'] = response.meta.get('register_date', None)
         user['manage'] = response.meta.get('manage', None)
-        user['id'] = int(re.findall(r'http://my.xcar.com.cn/space.php\?uid=(\d+).*', response.url)[0])
+        user['uid'] = int(re.findall(r'http://my.xcar.com.cn/space.php\?uid=(\d+).*', response.url)[0])
         user['name'] = response.xpath("//span[@class='name']/text()").get().strip()
         user['gender'] = None
         for title in response.xpath("//div[@class='icon_bed']/a/@title").getall():
@@ -220,13 +221,13 @@ class XcarForumSpider(CrawlSpider):
         user['num_follows'] = int(numbers[0].strip())
         user['num_fans'] = int(numbers[1].strip())
         user['num_posts'] = int(numbers[2].strip())
-        user['created_datetime'] = datetime.datetime.utcnow()
+        user['created_datetime'] = datetime.utcnow()
         yield user
 
     def parse_thread(self, response):
         self.logger.info('解析帖子页 ' + response.url)
         thread = XcarThread()
-        thread['id'] = int(re.findall(r'http://www.xcar.com.cn/bbs/viewthread.php\?tid=(\d+)', response.url)[0])
+        thread['tid'] = int(re.findall(r'http://www.xcar.com.cn/bbs/viewthread.php\?tid=(\d+)', response.url)[0])
         title = ''.join(response.xpath("//h2[@class='title']/text()").getall()).strip()
         thread['title'] = re.findall(r'[\s>]*(.*)', title)[0]
         thread['forum'] = int(response.xpath("//h2[@class='title']/a/@href").re_first(r'.*fid=(\d+)'))
@@ -234,7 +235,7 @@ class XcarForumSpider(CrawlSpider):
             if response.xpath("//div[@class='maintop']/div[@class='seal']/span[@class='jh']") is not None else False
         thread['num_views'] = response.meta.get('num_views', 0)
         thread['num_replies'] = response.meta.get('num_replies', 0)
-        thread['created_datetime'] = datetime.datetime.utcnow()
+        thread['created_datetime'] = datetime.utcnow()
         yield thread
 
         for _post in response.xpath("//div[@class='main item']"):
@@ -243,7 +244,7 @@ class XcarForumSpider(CrawlSpider):
             user_url = user_info.xpath("div[@class='user_info']/p[@class='name']/a/@href").get()
             user_coin = self._translate_coin(user_info.xpath("descendant::li[@class='akb']/em/text()").get().strip())
             register_dt_str = user_info.xpath("descendant::p[@class='ursr_info']/span/text()").get()
-            register_dt = datetime.datetime.strptime(register_dt_str.strip(), '%Y-%m-%d').date()
+            register_dt = datetime.strptime(register_dt_str.strip(), '%Y-%m-%d').date()
             yield Request(url=user_url, callback=self.parse_user,
                           meta={
                               'coin': user_coin,
@@ -253,30 +254,30 @@ class XcarForumSpider(CrawlSpider):
                               'Host': 'my.xcar.com.cn',
                               'Referer': response.url},
                           cookies={
-                              '_discuz_uid': 2330156,
-                              'bbs_auth': 'XUu25gYrpkdcMHZz75IWsw02t3uD7B7qOCHe6MfYVisOjjGp47tc%2BobRKUGlaltBCQ',
+                              '_discuz_uid': 17502059,
+                              'bbs_auth': 'VxvjtVV4%2BEBYZi9w75NEsF45437ZvB%2FrPnXfu5bfVSsNizKksOtXpobRKkWjalhECjU',
                               'bbs_cookietime': 31536000,
-                              'bbs_visitedfid': '738D739',
-                              '_fuv': 5582030787697,
-                              '_fwck_www': 'aa4b67e0015de2b06bc2393b426c0615',
-                              '_appuv_www': 'e88867bc192155f54ed3eb44d01447d3',
-                              '_fwck_my': '98f978fcb65551cf08c31f88fa75296b',
-                              '_appuv_my': 'd626e4ebed451b4c28b672cdb99b0d0a'})
+                              'bbs_visitedfid': '741D738D39',
+                              '_fuv': 5603160404768,
+                              '_fwck_www': '7b015af75e43be59766bb70bb0b9f7fe',
+                              '_appuv_www': 'a9a3380ae18b10bfc7685cd81f612bf6',
+                              '_fwck_my': '5ccd62d46ca3cf8378abc412a985f3b5',
+                              '_appuv_my': '610527e88f1d625fe42138e789c893b9'})
 
             # process post
             post = XcarPost()
-            post['id'] = int(_post.xpath("a/@name").re_first(r'pid(\d+)'))
-            self.logger.info('解析评论 pid={}, tid={}'.format(post['id'], thread['id']))
+            post['pid'] = int(_post.xpath("a/@name").re_first(r'pid(\d+)'))
+            self.logger.info('解析评论 pid={}, tid={}'.format(post['pid'], thread['tid']))
             publish_dt_str = _post.xpath("descendant::div[@class='mainboxTop']/p/text()")\
                 .re_first(r'.*发表于\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*')
-            publish_dt = datetime.datetime.strptime(publish_dt_str.strip(), '%Y-%m-%d %H:%M')
+            publish_dt = datetime.strptime(publish_dt_str.strip(), '%Y-%m-%d %H:%M')
             post['publish_datetime'] = pytz.timezone('Asia/Shanghai').localize(publish_dt).astimezone(pytz.utc)
             post['content'] = ' '.join(_post.xpath("descendant::div[@class='t_msgfont1']/descendant::*/text()")
                                        .getall()).strip()
-            post['created_datetime'] = datetime.datetime.utcnow()
+            post['created_datetime'] = datetime.utcnow()
             post['is_flag'] = True if _post.xpath("descendant::span[@class='t_title1']") is not None else False
             post['author'] = int(re.findall(r'.*uid=(\d+)', user_url)[0])
-            post['thread'] = thread['id']
+            post['thread'] = thread['tid']
             yield post
 
         # pagination

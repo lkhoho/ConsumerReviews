@@ -9,6 +9,9 @@
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 
+import platform
+
+
 BOT_NAME = 'consumerReviewsScraper'
 
 SPIDER_MODULES = ['consumerReviewsScraper.spiders']
@@ -103,4 +106,11 @@ ITEM_PIPELINES = {
 # FEED_EXPORT_FIELDS = ["content"]
 
 DB_PROVIDER = 'sqlite'
-DB_NAME = '/Users/keliu/consumer_reviews_working/consumer_reviews.db'
+if platform.system() == 'Windows':
+    DB_NAME = 'D:\\Developer\\consumer_reviews.db'
+elif platform.system() == 'Linux':
+    DB_NAME = '/mnt/d/Developer/consumer_reviews.db'
+else:
+    DB_NAME = '/Users/keliu/consumer_reviews_working/consumer_reviews.db'
+print(platform.system())
+print(DB_NAME)
