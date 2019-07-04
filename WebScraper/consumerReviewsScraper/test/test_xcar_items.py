@@ -206,3 +206,19 @@ class TestXcarUserItem(unittest.TestCase):
 
     def _get_record(self, pk) -> tuple:
         return self.conn.execute('SELECT * FROM xcar_user WHERE `uid`=?', (pk,)).fetchone()
+
+
+def create_test_suite() -> unittest.TestSuite:
+    suite = unittest.TestSuite()
+    suite.addTests([
+        TestXcarForumItem('test_upsert_delete'),
+        TestXcarPostItem('test_upsert_delete'),
+        TestXcarThreadItem('test_upsert_delete'),
+        TestXcarUserItem('test_upsert_delete')
+    ])
+    return suite
+
+
+if __name__ == '__main__':
+    runner = unittest.TextTestRunner()
+    runner.run(create_test_suite())

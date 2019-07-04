@@ -110,7 +110,7 @@ if platform.system() == 'Windows':
     DB_NAME = 'D:\\Developer\\consumer_reviews.db'
 elif platform.system() == 'Linux':
     DB_NAME = '/mnt/d/Developer/consumer_reviews.db'
-else:
+elif platform.system() == 'Darwin':
     DB_NAME = '/Users/keliu/consumer_reviews_working/consumer_reviews.db'
-print(platform.system())
-print(DB_NAME)
+else:
+    raise ValueError('Unsupported platform: ' + platform.system())
