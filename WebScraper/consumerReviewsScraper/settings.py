@@ -111,6 +111,6 @@ if platform.system() == 'Windows':
 elif platform.system() == 'Linux':
     DB_NAME = '/mnt/d/Developer/consumer_reviews.db'
 elif platform.system() == 'Darwin':
-    DB_NAME = '/Users/keliu/consumer_reviews_working/consumer_reviews.db'
+    DB_NAME = '/Users/keliu/OneDrive/consumer_reviews.db'
 else:
     raise ValueError('Unsupported platform: ' + platform.system())
