@@ -72,7 +72,8 @@ CONCURRENT_REQUESTS_PER_DOMAIN = 4
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'consumerReviewsScraper.pipelines.SaveXcarItemsPipeline': 100,
+    'consumerReviewsScraper.pipelines.SaveHyoubanItemsPipeline': 100,
+    # 'consumerReviewsScraper.pipelines.SaveXcarItemsPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveToSqlitePipeline': 100
     # 'consumerReviewsScraper.pipelines.SaveToMongoDb': 100,
     # 'scrapy_reviews.pipelines.SaveRawItemPipeline': 100,
@@ -107,9 +108,9 @@ ITEM_PIPELINES = {
 
 DB_PROVIDER = 'sqlite'
 if platform.system() == 'Windows':
-    DB_NAME = 'D:\\Developer\\consumer_reviews.db'
+    DB_NAME = 'C:\\Users\\lkhoho\\OneDrive\\consumer_reviews.db'
 elif platform.system() == 'Linux':
-    DB_NAME = '/mnt/d/Developer/consumer_reviews.db'
+    DB_NAME = '/mnt/c/Users/lkhoho/OneDrive/consumer_reviews.db'
 elif platform.system() == 'Darwin':
     DB_NAME = '/Users/keliu/OneDrive/consumer_reviews.db'
 else:

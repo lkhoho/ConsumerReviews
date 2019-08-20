@@ -13,22 +13,23 @@ class HyoubanReview(scrapy.Item):
     status = scrapy.Field()
     publish_date = scrapy.Field()
     num_helpful = scrapy.Field()
+    attitude = scrapy.Field()
     created_datetime = scrapy.Field()
 
     @property
     def field_values(self):
         return self['review_id'], self['company_id'], self['company'], self['category'], self['content'], \
-                self['status'], self['publish_date'], self['num_helpful'], self['created_datetime']
+                self['status'], self['publish_date'], self['num_helpful'], self['attitude'], self['created_datetime']
 
     def upsert(self, conn: Connection):
         conn.execute('INSERT INTO hyouban_review(`review_id`, `company_id`, `company`, `category`, `content`, '
-                     '`status`, `publish_date`, `num_helpful`, `created_datetime`) '
-                     'VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(`review_id`) DO UPDATE SET '
+                     '`status`, `publish_date`, `num_helpful`, `attitude`, `created_datetime`) '
+                     'VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(`review_id`) DO UPDATE SET '
                      '`company_id`=?, `company`=?, `category`=?, `content`=?, `status`=?, `publish_date`=?, '
-                     '`num_helpful`=?, `created_datetime`=?',
+                     '`num_helpful`=?, `attitude`=?, `created_datetime`=?',
                      (*self.field_values, self.field_values[1], self.field_values[2], self.field_values[3], 
                       self.field_values[4], self.field_values[5], self.field_values[6], self.field_values[7], 
-                      self.field_values[8]))
+                      self.field_values[8], self.field_values[9]))
         conn.commit()
 
     def delete(self, conn: Connection):

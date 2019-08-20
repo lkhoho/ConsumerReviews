@@ -16,6 +16,25 @@ from .items.orbitz import *
 from .items.dianping import *
 
 
+class SaveHyoubanItemsPipeline(object):
+    """ Save items of hyouban.com to Sqlite 3. """
+
+    def __init__(self):
+        self.conn = None
+
+    def open_spider(self, spider):
+        self.conn = sqlite3.connect(DB_NAME)
+        spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
+    
+    def close_spider(self, spider):
+        self.conn.close()
+        spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
+
+    def process_item(self, item, spider):
+        item.upsert(self.conn)
+        return item
+
+
 class SaveXcarItemsPipeline(object):
     """ Save items of xcar.com to Sqlite 3. """
 
