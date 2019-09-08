@@ -1,40 +1,45 @@
 import scrapy
-from .base import ConsumerReview
+from sqlite3 import Connection
 
 
-class OrbitzReviewItem(ConsumerReview):
+class OrbitzReviewItem(scrapy.Item):
     """ Orbitz hotel review info. """
 
-    def __init__(self):
-        super().__init__()
-        self["score"] = 0
-        self["will_recommend"] = 0
-        self["recommend_for"] = ""
-        self["location"] = ""
-        self["remark"] = {
-            "pros": "",
-            "cons": "",
-            "location": ""
-        }
-        self["response"] = ConsumerReview()
-
-    @staticmethod
-    def get_column_headers() -> list:
-        return super(OrbitzReviewItem, OrbitzReviewItem).get_column_headers() + [
-            "score", "location", "will_recommend", "recommend_for", "remark_pros", "remark_cons", "remark_location",
-            "response_title", "response_author", "response_date", "response_content"
-        ]
-
-    def get_column_values(self) -> list:
-        return super().get_column_values() + [
-            self["score"], self["location"], self["will_recommend"], self["recommend_for"], self["remark"]["pros"],
-            self["remark"]["cons"], self["remark"]["location"], self["response"]["title"], self["response"]["author"],
-            self["response"]["date"], self["response"]["content"]
-        ]
-
+    review_id = scrapy.Field()
+    author = scrapy.Field()
+    publish_date = scrapy.Field()
+    content = scrapy.Field()
+    created_datetime = scrapy.Field()
     score = scrapy.Field()
-    will_recommend = scrapy.Field()
-    recommend_for = scrapy.Field()
-    location = scrapy.Field()
-    remark = scrapy.Field()
-    response = scrapy.Field()
+    heading = scrapy.Field()
+    num_helpful = scrapy.Field()
+    stayed = scrapy.Field()
+    response_id = scrapy.Field()
+    response_author = scrapy.Field()
+    response_publish_date = scrapy.Field()
+    response_content = scrapy.Field()
+
+    @property
+    def field_values(self):
+        return self['review_id'], self['author'], self['publish_date'], self['content'], \
+                self['created_datetime'], self['score'], self['heading'], self['num_helpful'], \
+                self['stayed'], self['response_id'], self['response_author'], self['response_publish_date'], \
+                self['response_content']
+
+    def upsert(self, conn: Connection):
+        conn.execute('INSERT INTO orbitz_review(`review_id`, `author`, `publish_date`, `content`, '
+                     '`created_datetime`, `score`, `heading`, `num_helpful`, `stayed`, '
+                     '`response_id`, `response_author`, `response_publish_date`, `response_content`) '
+                     'VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(`review_id`) DO UPDATE SET '
+                     '`author`=?, `publish_date`=?, `content`=?, `created_datetime`=?, `score`=?, '
+                     '`heading`=?, `num_helpful`=?, `stayed`=?, `response_id=?`, `response_author`=?, '
+                     '`response_publish_date`=?, `response_content`=?',
+                     (*self.field_values, self['author'], self['publish_date'], self.['content'], 
+                      self['created_datetime'], self['score'], self['heading'], self['num_helpful'], 
+                      self['stayed'], self['response_id'], self['response_author'], self['response_publish_date'], 
+                      self['response_content']))
+        conn.commit()
+
+    def delete(self, conn: Connection):
+        conn.execute('DELETE FROM orbitz_review WHERE `review_id`=?', (self['review_id'],))
+        conn.commit()
