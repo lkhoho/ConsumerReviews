@@ -6,17 +6,22 @@ from ..items.hyouban import HyoubanReview
 
 
 class TestHyoubanReviewItem(unittest.TestCase):
-    test_data = (999, 888, 'test_company', 'test_category', 'test_content', 'test_status',
-                 datetime.utcnow(), 777, 'good', datetime.utcnow())
+    review_id = 999
+    company_id = 888
+    company = 'test company'
+    category = 'test category'
+    content = 'test content'
+    status = 'test status'
+    publish_date = datetime.utcnow()
+    num_helpful = 77
+    attitude = 'good'
+    created_datetime = datetime.utcnow()
 
     def setUp(self) -> None:
         self.conn = sqlite3.connect(DB_NAME)
 
     def test_upsert(self):
-        obj = HyoubanReview(review_id=self.test_data[0], company_id=self.test_data[1], company=self.test_data[2],
-                            category=self.test_data[3], content=self.test_data[4], status=self.test_data[5],
-                            publish_date=self.test_data[6], num_helpful=self.test_data[7], attitude=self.test_data[8],
-                            created_datetime=self.test_data[9])
+        obj = self._get_instance()
         self._insert(obj)
         existing = self._get_record(obj['review_id'])
         self.assertIsNotNone(existing)
@@ -26,17 +31,14 @@ class TestHyoubanReviewItem(unittest.TestCase):
         obj.upsert(self.conn)
         existing = self._get_record(obj['review_id'])
         self.assertIsNotNone(existing)
-        self.assertTrue(datetime.strptime(existing[9], '%Y-%m-%d %H:%M:%S.%f') > self.test_data[9])
+        self.assertTrue(datetime.strptime(existing[9], '%Y-%m-%d %H:%M:%S.%f') > self.created_datetime)
 
         self.conn.execute('DELETE FROM hyouban_review WHERE `review_id`=?', (obj['review_id'],))
         self.conn.commit()
 
     def test_delete(self):
-        obj = HyoubanReview(review_id=self.test_data[0], company_id=self.test_data[1], company=self.test_data[2],
-                            category=self.test_data[3], content=self.test_data[4], status=self.test_data[5],
-                            publish_date=self.test_data[6], num_helpful=self.test_data[7], attitude=self.test_data[8],
-                            created_datetime=self.test_data[9])
-        self._insert(obj)
+        obj = self._get_instance()
+        obj.upsert(self.conn)
         existing = self._get_record(obj['review_id'])
         self.assertIsNotNone(existing)
         self.assertEqual(existing[0], obj['review_id'])
@@ -53,6 +55,19 @@ class TestHyoubanReviewItem(unittest.TestCase):
                           'VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                           obj.field_values)
         self.conn.commit()
+    
+    def _get_instance(self) -> HyoubanReview:
+        return HyoubanReview(
+            review_id=self.review_id,
+            company_id=self.company_id,
+            company=self.company,
+            category=self.category,
+            content=self.content,
+            status=self.status,
+            publish_date=self.publish_date,
+            num_helpful=self.num_helpful,
+            attitude=self.attitude,
+            created_datetime=self.created_datetime)
 
     def _get_record(self, pk) -> tuple:
         return self.conn.execute('SELECT * FROM hyouban_review WHERE `review_id`=?', (pk,)).fetchone()
