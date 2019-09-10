@@ -26,6 +26,8 @@ class ExpediaReviewItem(scrapy.Item):
     remarks_positive = scrapy.Field()
     remarks_negative = scrapy.Field()
     remarks_location = scrapy.Field()
+    hotel_id = scrapy.Field()
+    hotel_name = scrapy.Field()
 
     def insert(self, conn: Connection):
         conn.execute('''
@@ -50,8 +52,10 @@ class ExpediaReviewItem(scrapy.Item):
                 `location`, 
                 `remarks_positive`, 
                 `remarks_negative`, 
-                `remarks_location`) 
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                `remarks_location`, 
+                `hotel_id`, 
+                `hotel_name`) 
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             (self['review_id'], 
                 self['author'], 
                 self['publish_datetime'], 
@@ -72,7 +76,9 @@ class ExpediaReviewItem(scrapy.Item):
                 self['location'],
                 self['remarks_positive'], 
                 self['remarks_negative'], 
-                self['remarks_location'])
+                self['remarks_location'],
+                self['hotel_id'],
+                self['hotel_name'])
         )
 
         conn.commit()

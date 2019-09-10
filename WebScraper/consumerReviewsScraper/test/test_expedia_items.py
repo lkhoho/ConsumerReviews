@@ -27,6 +27,8 @@ class TestExpediaReviewItem(unittest.TestCase):
     remarks_positive = 'N/A'
     remarks_negative = 'N/A'
     remarks_location = 'N/A'
+    hotel_id = 1234567
+    hotel_name = 'test hotel'
 
     def setUp(self) -> None:
         self.conn = sqlite3.connect(DB_NAME)
@@ -75,7 +77,9 @@ class TestExpediaReviewItem(unittest.TestCase):
                 location=self.location,
                 remarks_positive=self.remarks_positive,
                 remarks_negative=self.remarks_negative,
-                remarks_location=self.remarks_location)
+                remarks_location=self.remarks_location,
+                hotel_id=self.hotel_id,
+                hotel_name=self.hotel_name)
 
     def _get_record(self, pk) -> tuple:
         return self.conn.execute('SELECT * FROM expedia_review WHERE `review_id`=?', (pk,)).fetchone()
