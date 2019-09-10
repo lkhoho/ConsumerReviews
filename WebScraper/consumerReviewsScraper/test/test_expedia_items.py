@@ -14,7 +14,7 @@ class TestExpediaReviewItem(unittest.TestCase):
     overall_rating = 3
     num_helpful = 12
     stay_duration = 'stayed 3 nights on Aug 2018'
-    travel_companion = 'Travelers with pets'
+    category = 'Families'
     response_id = '2badce45-856a-4f5f-a465-0a0edce71248'
     response_author = 'test response author'
     response_publish_datetime = datetime.utcnow()
@@ -63,7 +63,7 @@ class TestExpediaReviewItem(unittest.TestCase):
                 overall_rating=self.overall_rating,
                 num_helpful=self.num_helpful,
                 stay_duration=self.stay_duration,
-                travel_companion=self.travel_companion,
+                category=self.category,
                 response_id=self.response_id,
                 response_author=self.response_author,
                 response_publish_datetime=self.response_publish_datetime,

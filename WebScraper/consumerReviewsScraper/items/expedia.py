@@ -13,7 +13,7 @@ class ExpediaReviewItem(scrapy.Item):
     overall_rating = scrapy.Field()
     num_helpful = scrapy.Field()
     stay_duration = scrapy.Field()
-    travel_companion = scrapy.Field()
+    category = scrapy.Field()
     response_id = scrapy.Field()
     response_author = scrapy.Field()
     response_publish_datetime = scrapy.Field()
@@ -38,7 +38,7 @@ class ExpediaReviewItem(scrapy.Item):
                 `overall_rating`, 
                 `num_helpful`, 
                 `stay_duration`, 
-                `travel_companion`, 
+                `category`, 
                 `response_id`, 
                 `response_author`, 
                 `response_publish_datetime`, 
@@ -60,7 +60,7 @@ class ExpediaReviewItem(scrapy.Item):
                 self['overall_rating'], 
                 self['num_helpful'], 
                 self['stay_duration'], 
-                self['travel_companion'], 
+                self['category'], 
                 self['response_id'], 
                 self['response_author'], 
                 self['response_publish_datetime'], 
