@@ -33,9 +33,9 @@ class TestExpediaReviewItem(unittest.TestCase):
     def setUp(self) -> None:
         self.conn = sqlite3.connect(DB_NAME)
 
-    def test_insert(self):
+    def test_upsert(self):
         obj = self._get_instance()
-        obj.insert(self.conn)
+        obj.upsert(self.conn)
         existing = self._get_record(obj['review_id'])
         self.assertIsNotNone(existing)
         self.assertEqual(existing[1], obj['review_id'])
@@ -44,7 +44,7 @@ class TestExpediaReviewItem(unittest.TestCase):
 
     def test_delete(self):
         obj = self._get_instance()
-        obj.insert(self.conn)
+        obj.upsert(self.conn)
         existing = self._get_record(obj['review_id'])
         self.assertIsNotNone(existing)
         self.assertEqual(existing[1], obj['review_id'])
