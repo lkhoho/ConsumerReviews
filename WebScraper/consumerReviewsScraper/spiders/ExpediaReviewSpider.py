@@ -1,4 +1,6 @@
 import re
+import simplejson
+from datetime import datetime
 from fake_useragent import UserAgent
 from scrapy.http import Request, Response
 from scrapy.spiders import CrawlSpider
@@ -7,11 +9,57 @@ from ..items.expedia import ExpediaReviewItem
 
 class ExpediaReviewSpider(CrawlSpider):
     name = 'expedia_hotel_reviews_spider'
+
+    custom_settings = {
+        'LOG_FILE': '{}.log'.format(name),
+
+        # default user agent
+        # 'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36',
+        # 'RETRY_HTTP_CODES': [429],
+
+        # Auto-throttling
+        'CONCURRENT_REQUESTS': 16,
+        'DOWNLOAD_DELAY': 1,
+
+        # a list of proxies
+        # 'ROTATING_PROXY_LIST': [
+        #     '103.42.253.183:34954',
+        #     '85.172.12.245:8118',
+        #     '37.200.224.179:8080',
+        #     '103.80.238.195:53281',
+        #     '125.26.7.115:30012',
+        #     '138.186.21.86:53281',
+        #     '183.87.153.98:49602',
+        #     '1.179.206.161:49817',
+        #     '192.140.42.81:33954',
+        #     '1.20.100.45:51685',
+        #     '179.108.86.219:49439',
+        #     '180.92.238.226:53451',
+        #     '137.116.120.30:80',
+        #     '167.71.161.102:8080',
+        #     '198.50.152.64:23500',
+        #     '12.8.246.133:41845',
+        # ],
+
+        # cap of backoff (1 day)
+        # 'ROTATING_PROXY_BACKOFF_CAP': 3600 * 24,
+
+        'DOWNLOADER_MIDDLEWARES': {
+            'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+            'consumerReviewsScraper.middlewares.RandomUserAgentMiddleware': 400,
+            # 'consumerReviewsScraper.middlewares.TooManyRequestsRetryMiddleware': 543,
+            # 'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+            # 'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
+        },
+    }
+
+    # user_agent = UserAgent()  # fake user agent
+
     start_urls = [
-        'https://www.expedia.com/Tokyo-Hotels-APA-Hotel-Keisei-Ueno-Ekimae.h13094145.Hotel-Information?chkin=9%2F22%2F2019&chkout=9%2F23%2F2019&regionId=179900&destination=Tokyo+%28and+vicinity%29%2C+Japan&swpToggleOn=true&rm1=a2&x_pwa=1&sort=recommended&top_dp=118&top_cur=USD&rfrr=HSR&pwa_ts=1568094513466',
+        'https://www.expedia.com/Tokyo-Hotels-APA-Hotel-Keisei-Ueno-Ekimae.h13094145.Hotel-Information?chkin=9%2F22%2F2019&chkout=9%2F23%2F2019&destination=Tokyo%20%28and%20vicinity%29%2C%20Japan&pwaDialog=reviews&pwa_ts=1568094513466&regionId=179900&rfrr=HSR&rm1=a2&sort=recommended&swpToggleOn=true&top_cur=USD&top_dp=118&x_pwa=1',
     ]
+
     num_reviews_per_request = 10
-    user_agent = UserAgent()  # fake user agent
 
     # filter definitions used in graphql query
     category_filters = {
@@ -49,17 +97,40 @@ class ExpediaReviewSpider(CrawlSpider):
         }
     }
 
-    def parse_start_url(self):
+    def parse_start_url(self, response):
         for url in self.start_urls:
             property_ID = re.findall(r'.*\.h(\d+)\..*', url)[0]
-            yield Request(url=url, callback=self.parse, headers={'User-Agent': self.user_agent.random}, meta={'property_ID': property_ID})
+            yield Request(url=url, callback=self.parse_first_request, meta={'property_ID': property_ID},
+                          headers={
+                              'Cookie': 'tpid=v.1,1; iEAPID=0; currency=USD; linfo=v.4,|0|0|255|1|0||||||||1033|0|0||0|0|0|-1|-1; pwa_csrf=d0786c3e-6946-4203-90b8-5ccd63d7a725|D3ahwRzbqnKIa9zr4_LpV1aNOwvz7xCzv6wnYCvRbhP4QOOwjDpY4SAzXvwCp8Oiho_ZjhGg4GwOuWEpJkqRcQ; MC1=GUID=0744d4a3ce1c4dd0bdc17a105a1f69d4; DUAID=0744d4a3-ce1c-4dd0-bdc1-7a105a1f69d4; AMCVS_C00802BE5330A8350A490D4C%40AdobeOrg=1; s_ecid=MCMID%7C06179023703179136360062832346793475516; s_cc=true; _gcl_au=1.1.563409396.1568519291; _ga=GA1.2.1504753458.1568519291; xdid=ece7fa84-2935-467b-af14-517d385dc195|1568519294|expedia.com; _gid=GA1.2.425040987.1568735474; HMS=1f6643fd-2b09-4014-854a-6bb5a1b7e879; ak_bmsc=88CCC145B5CA605E85FBCD4EF0121AAA1724025E7E3B00007AFF825D33C5F203~pl8tx0aas9asJvQwdlnlBIcCCdeE4DOc6zW6sL7TOMkCR0rgs3x37rEHjVGhzzyJHE6zMow4hOqbaAsq+iPVq2luaM5Vpn5ZC6yJk1ZNqyV6hCpckz0l+ARafQrkIuDpXvCafNy/4s4l+iLDZF+KlgyGpTL5wfQENJL1Y1uaW9GyIOTdn2AuO6Xm3P4mpX/+zBXDxS/Usva1+3WDqTso3/UImxmPgajy79iH1lCfbr2Ps=; s_ppn=page.Hotels.Infosite.Information; AMCV_C00802BE5330A8350A490D4C%40AdobeOrg=1406116232%7CMCIDTS%7C18159%7CvVersion%7C2.5.0%7CMCMID%7C06179023703179136360062832346793475516%7CMCAAMLH-1569470973%7C9%7CMCAAMB-1569470973%7CRKhpRz8krg2tLO6pguXWp5olkAcUniQYPHaMWWgdJ3xzPWQmdj0y%7CMCOPTOUT-1568873373s%7CNONE%7CMCAID%7CNONE; _gat_gtag_UA_35711341_2=1; x-CGP-exp-30353=3; x-CGP-exp-15795=2; x-CGP-exp-28702=0; utag_main=v_id:016d3308fe4f0017a4cce4e7b2a403072012a06a00c98$_sn:6$_ss:0$_st:1568867990819$ses_id:1568866174009%3Bexp-session$_pn:3%3Bexp-session; JSESSIONID=0AC11F5098F8DC8F4236C014032BB700; cesc=%7B%22marketingClick%22%3A%5B%22false%22%2C1568866191757%5D%2C%22hitNumber%22%3A%5B%225%22%2C1568866191757%5D%2C%22visitNumber%22%3A%5B%226%22%2C1568866172885%5D%2C%22entryPage%22%3A%5B%22page.Hotels.Infosite.Information%22%2C1568866191757%5D%7D; s_ppvl=page.Hotels.Infosite.Information%2C13%2C13%2C1050%2C1039%2C1050%2C2048%2C1152%2C1.25%2CL; s_ppv=https%253A%2F%2Fwww.expedia.com%2FTokyo-Hotels-APA-Hotel-Keisei-Ueno-Ekimae.h13094145.Hotel-Information%253Fchkin%253D9%25252F22%25252F2019%2526chkout%253D9%25252F23%25252F2019%2526regionId%253D179900%2526destination%253DTokyo%2B%252528and%2Bvicinity%252529%25252C%2BJapan%2526swpToggleOn%253Dtrue%2526rm1%253Da2%2526x_pwa%253D1%2526sort%253Drecommended%2526top_dp%253D118%2526top_cur%253DUSD%2526rfrr%253DHSR%2526pwa_ts%253D1568094513466%2C13%2C13%2C1050%2C1960%2C1050%2C2048%2C1152%2C1.25%2CP',
+                          },
+                        #   headers={
+                        #       'sec-fetch-user': '?1',
+                        #       'sec-fetch-site': 'sec-fetch-site',
+                        #       'sec-fetch-mode': 'navigate',
+                        #       'utag_main': 'v_id:016d3308fe4f0017a4cce4e7b2a403072012a06a00c98',
+                        #       's_cc': True,
+                        #       's_ecid': 'MCMID%7C06179023703179136360062832346793475516',
+                        #       's_ppn': 'page.Hotels.Infosite.Information',
+                        #       's_ppv': 'page.Hotels.Infosite.Information%2C13%2C13%2C1050%2C1039%2C1050%2C2048%2C1152%2C1.25%2CL',
+                        #       's_ppvl': 'https%253A%2F%2Fwww.expedia.com%2FTokyo-Hotels-APA-Hotel-Keisei-Ueno-Ekimae.h13094145.Hotel-Information%253Fchkin%253D9%25252F22%25252F2019%2526chkout%253D9%25252F23%25252F2019%2526regionId%253D179900%2526destination%253DTokyo%2B%252528and%2Bvicinity%252529%25252C%2BJapan%2526swpToggleOn%253Dtrue%2526rm1%253Da2%2526x_pwa%253D1%2526sort%253Drecommended%2526top_dp%253D118%2526top_cur%253DUSD%2526rfrr%253DHSR%2526pwa_ts%253D1568094513466%2C13%2C13%2C1050%2C1960%2C1050%2C2048%2C1152%2C1.25%2CP',
+                        #       'pwa_csrf': 'd0786c3e-6946-4203-90b8-5ccd63d7a725|D3ahwRzbqnKIa9zr4_LpV1aNOwvz7xCzv6wnYCvRbhP4QOOwjDpY4SAzXvwCp8Oiho_ZjhGg4GwOuWEpJkqRcQ',
+                        #       'cesc': '%7B%22marketingClick%22%3A%5B%22false%22%2C1568525713230%5D%2C%22hitNumber%22%3A%5B%224%22%2C1568525713230%5D%2C%22visitNumber%22%3A%5B%222%22%2C1568524993321%5D%2C%22entryPage%22%3A%5B%22page.Hotels.Infosite.Information%22%2C1568525713230%5D%7D',
+                        #       'ak_bmsc': '6CC530EF769AD1CDEBBF4C35570224041724025E7E3B000078B47D5D2546000C',
+                        #       'MC1': 'GUID=0744d4a3ce1c4dd0bdc17a105a1f69d4',
+                        #       'JSESSIONID': 'B0AEE38C898B8FA1C951AF935140D259',
+                        #       'HMS': 'ff56ac79-13c2-4077-b2a7-cbda7ccd6775',
+                        #       'DUAID': '0744d4a3-ce1c-4dd0-bdc1-7a105a1f69d4',
+                        #       'xdid': 'ece7fa84-2935-467b-af14-517d385dc195|1568519294|expedia.com',
+                        #   }, 
+                        )
 
 
-    def parse(self, response):
+    def parse_first_request(self, response):
         property_ID = response.meta['property_ID']
         hotel_name = response.xpath("//h1[@data-stid='content-hotel-title']/text()").get().strip()
         num_reviews = int(response.xpath("//meta[@itemprop='reviewCount']/@content").get())
-        self.logger.info('Parsing hotel={}, reviewCount={}'.format(hotel_name, num_reviews))
+        self.logger.info('Parsing hotel={}, hotelID={}, reviewCount={}'.format(hotel_name, property_ID, num_reviews))
 
         graphql_payload = {
             'operationName': 'Reviews',
@@ -87,8 +158,8 @@ class ExpediaReviewSpider(CrawlSpider):
                 'filters': {
                     'includeRecentReviews': True,
                     'includeRatingsOnlyReviews': True,
-                    'tripReason': [],
-                    'travelCompanion': []
+                    'tripReason': None,
+                    'travelCompanion': None
                 },
                 'pagination': {
                     'startingIndex': 0,
@@ -102,54 +173,12 @@ class ExpediaReviewSpider(CrawlSpider):
             for category, category_filter in self.category_filters.items():
                 graphql_payload['variables']['filters']['tripReason'] = category_filter['tripReason']
                 graphql_payload['variables']['filters']['travelCompanion'] = category_filter['travelCompanion']
-                yield Request(url='https://www.expedia.com/graphql', callback=self.parse_graphql, method='POST', body=graphql_payload,
+                yield Request(url='https://www.expedia.com/graphql', callback=self.parse_graphql, method='POST', body=simplejson.dumps(graphql_payload),
                               headers={
                                   'Content-Type': 'application/json',
                                   'Origin': 'https://www.expedia.com',
                                   'Referer': response.url,
-                                  'Credentials' : 'same-origin',
-                                  'Accept': '*/*',
-                                  'Accept-Encoding': 'gzip, deflate, br',
-                                  ':authority': 'www.expedia.com',
-                                  ':method': 'POST',
-                                  ':path': '/graphql',
-                                  ':scheme': 'https',
-                                  'device-user-agent-id': '1b7e66a7-c1f7-403e-9d34-8d5e694b9fc7',
-                              },
-                              cookies={
-                                  'tpid': 'v.1,1',
-                                  'iEAPID': 0,
-                                  'currency': 'USD',
-                                  'linfo': 'v.4,|0|0|255|1|0||||||||1033|0|0||0|0|0|-1|-1',
-                                  'MC1': 'GUID=1b7e66a7c1f7403e9d348d5e694b9fc7',
-                                  'DUAID': '1b7e66a7-c1f7-403e-9d34-8d5e694b9fc7',
-                                  'aspp': 'v.1,0|||||||||||||',
-                                  'stop_mobi': 'yes', 
-                                  'ipsnf3': 'v.3|us|1|753|chandler',
-                                  'AMCVS_C00802BE5330A8350A490D4C%40AdobeOrg': 1,
-                                  's_ecid': 'MCMID%7C64964746673589299820431222456632799247',
-                                  'AB_Test_TripAdvisor': 'A',
-                                  'qualtrics_sample': False,
-                                  'qualtrics_SI_sample': True,
-                                  's_cc': True,
-                                  '_fbp': 'fb.1.1567922778333.528356505',
-                                  '_gcl_au': '1.1.1858745471.1567922778',
-                                  '_ga': 'GA1.2.192394631.1567922779',
-                                  'xdid': '0268f63e-c355-4250-b5c4-8a68a4d85c69|1567922780|expedia.com',
-                                  'pwa_csrf': '4b8ad7b2-2512-4a04-9094-858a54e1ec5e|bvLogfjfVKVsAVdEF4EDe22udRD1tt8kiKgBm9_ji6RFhaxJE2rehsExnpikyc4o78WppdZJxs29-r0_7E_4WA',
-                                  'x-cgp-exp': '27461.79023.pwa',
-                                  '_gid': 'GA1.2.828196263.1568094513',
-                                  'JSESSIONID': 'A8B8F84B476BDECEA0E24D5E70B462C3',
-                                  '_tq_id.TV-721872-1.7ec4': 'a910f9b0b934e604.1567922779.0.1568097383..',
-                                  'CONSENTMGR': 'ts:1568097392866%7Cconsent:true',
-                                  'ak_bmsc': '4A1A6CB44B6331068667D2C106B094D91724021E01050000A268775DB129CB66~plohMD5QWEhGHtnwwctPNN0VfEM88f8W28qt6me9fkjK9UDvw3d3PShxbny+QK8OYvQ2agkabgFXq6xGQLcrZowUhovGl/+/eHVds0jLQeN4zO9uz0RqgPzLLCMvpNr59kCnz6v4NqPIcT8m5J35rJ+CYMQQW8Zs2FouzZESujt3am+ZX/9Zx0o+9wDQ+AEjiykoFlazHSSsETRisT9LzC6s1xTW/cLghGMq/nmpleR4o=',
-                                  'AMCV_C00802BE5330A8350A490D4C%40AdobeOrg': '1406116232%7CMCIDTS%7C18150%7CMCMID%7C64964746673589299820431222456632799247%7CMCAAMLH-1568711460%7C9%7CMCAAMB-1568711460%7CRKhpRz8krg2tLO6pguXWp5olkAcUniQYPHaMWWgdJ3xzPWQmdj0y%7CMCOPTOUT-1568113860s%7CNONE%7CMCAID%7CNONE%7CvVersion%7C2.5.0',
-                                  'JSESSION': '980f38ee-14b2-4973-b62e-d38de2f9eeeb',
-                                  'utag_main': 'v_id:016d0f7aecb800103991ef5cc8e603073001806b00c98$_sn:5$_ss:0$_st:1568108496497$ses_id:1568106660468%3Bexp-session$_pn:3%3Bexp-session',
-                                  'cesc': '%7B%22marketingClick%22%3A%5B%22false%22%2C1568106696760%5D%2C%22hitNumber%22%3A%5B%226%22%2C1568106696760%5D%2C%22visitNumber%22%3A%5B%225%22%2C1568106658971%5D%2C%22entryPage%22%3A%5B%22page.Hotels.Infosite.Information%22%2C1568106696760%5D%2C%22cid%22%3A%5B%22Brand.DTI%22%2C1567922777381%5D%7D',
-                                  's_ppvl': 'page.Hotels.Infosite.Information%2C14%2C14%2C1050%2C1043%2C1050%2C2048%2C1152%2C1.25%2CL',
-                                  'HMS': 'b8d00bbc-61b0-499e-ba63-856aad123dd8',
-                                  's_ppv': 'page.Hotels.Infosite.Information%2C54%2C14%2C5250%2C1043%2C1050%2C2048%2C1152%2C1.25%2CL',
+                                  'Cookie': 'cookie: tpid=v.1,1; iEAPID=0; currency=USD; linfo=v.4,|0|0|255|1|0||||||||1033|0|0||0|0|0|-1|-1; pwa_csrf=d0786c3e-6946-4203-90b8-5ccd63d7a725|D3ahwRzbqnKIa9zr4_LpV1aNOwvz7xCzv6wnYCvRbhP4QOOwjDpY4SAzXvwCp8Oiho_ZjhGg4GwOuWEpJkqRcQ; MC1=GUID=0744d4a3ce1c4dd0bdc17a105a1f69d4; DUAID=0744d4a3-ce1c-4dd0-bdc1-7a105a1f69d4; AMCVS_C00802BE5330A8350A490D4C%40AdobeOrg=1; s_ecid=MCMID%7C06179023703179136360062832346793475516; s_cc=true; _gcl_au=1.1.563409396.1568519291; _ga=GA1.2.1504753458.1568519291; xdid=ece7fa84-2935-467b-af14-517d385dc195|1568519294|expedia.com; _gid=GA1.2.425040987.1568735474; HMS=1f6643fd-2b09-4014-854a-6bb5a1b7e879; ak_bmsc=88CCC145B5CA605E85FBCD4EF0121AAA1724025E7E3B00007AFF825D33C5F203~pl8tx0aas9asJvQwdlnlBIcCCdeE4DOc6zW6sL7TOMkCR0rgs3x37rEHjVGhzzyJHE6zMow4hOqbaAsq+iPVq2luaM5Vpn5ZC6yJk1ZNqyV6hCpckz0l+ARafQrkIuDpXvCafNy/4s4l+iLDZF+KlgyGpTL5wfQENJL1Y1uaW9GyIOTdn2AuO6Xm3P4mpX/+zBXDxS/Usva1+3WDqTso3/UImxmPgajy79iH1lCfbr2Ps=; s_ppn=page.Hotels.Infosite.Information; AMCV_C00802BE5330A8350A490D4C%40AdobeOrg=1406116232%7CMCIDTS%7C18159%7CvVersion%7C2.5.0%7CMCMID%7C06179023703179136360062832346793475516%7CMCAAMLH-1569470973%7C9%7CMCAAMB-1569470973%7CRKhpRz8krg2tLO6pguXWp5olkAcUniQYPHaMWWgdJ3xzPWQmdj0y%7CMCOPTOUT-1568873373s%7CNONE%7CMCAID%7CNONE; x-CGP-exp-30353=3; x-CGP-exp-15795=2; x-CGP-exp-28702=0; JSESSIONID=5FDA37C2D7FABC5FED3401C0D6D9D434; cesc=%7B%22marketingClick%22%3A%5B%22false%22%2C1568866203682%5D%2C%22hitNumber%22%3A%5B%227%22%2C1568866203682%5D%2C%22visitNumber%22%3A%5B%226%22%2C1568866172885%5D%2C%22entryPage%22%3A%5B%22page.Hotels.Infosite.Information%22%2C1568866203682%5D%7D; utag_main=v_id:016d3308fe4f0017a4cce4e7b2a403072012a06a00c98$_sn:6$_ss:0$_st:1568868003252$ses_id:1568866174009%3Bexp-session$_pn:4%3Bexp-session; s_ppvl=https%253A%2F%2Fwww.expedia.com%2FTokyo-Hotels-APA-Hotel-Keisei-Ueno-Ekimae.h13094145.Hotel-Information%253Fchkin%253D9%25252F22%25252F2019%2526chkout%253D9%25252F23%25252F2019%2526regionId%253D179900%2526destination%253DTokyo%2B%252528and%2Bvicinity%252529%25252C%2BJapan%2526swpToggleOn%253Dtrue%2526rm1%253Da2%2526x_pwa%253D1%2526sort%253Drecommended%2526top_dp%253D118%2526top_cur%253DUSD%2526rfrr%253DHSR%2526pwa_ts%253D1568094513466%2C13%2C13%2C1050%2C1960%2C1050%2C2048%2C1152%2C1.25%2CP; s_ppv=page.Hotels.Infosite.Information%2C13%2C13%2C1050%2C1039%2C1050%2C2048%2C1152%2C1.25%2CL',
                               },
                               meta={'hotel_name': hotel_name, 'hotel_id': property_ID, 'category': category, 'num_reviews': num_reviews, 'start_index': start_index})
         
@@ -157,48 +186,39 @@ class ExpediaReviewSpider(CrawlSpider):
         hotel_name = response.meta['hotel_name']
         hotel_id = response.meta['hotel_id']
         category = response.meta['category']
-        self.logger.info('Parsing GraphQL response. Hotel={}, Category={}, '.format(hotel_name, num_reviews))
-
-
-
-        selectors = response.xpath("//section[@id='reviews']/article")
-
-        for selector in selectors:
-            review = ExpediaReviewItem()
-            review["score"] = int(selector.xpath("div[@class='summary']/span/span/text()").extract_first())
-            val = selector.xpath("div[@class='summary']/blockquote/text()").re(r"for .+")
-            if len(val) > 0:
-                review["recommend_for"] = val[0].replace("for ", "")
-                review["will_recommend"] = 1
-            val = selector.xpath("div[@class='summary']/blockquote/div/text()").extract_first().strip().replace("\xa0", " ")
-            m = re.match(r"by\s*([\w\s]+) from\s*([\w\s,]+)", val)
-            if m is not None:
-                review["author"] = m.group(1)
-                review["location"] = m.group(2)
-            else:
-                review["author"] = re.match(r"by\s*([\w\s]+)", val).group(1)
-            val = selector.xpath("div[@class='details']/h3/text()").extract_first()
-            if val is not None:
-                review["title"] = val.replace("\r\n", "").replace("\"", "'")
-            review["date"] = selector.xpath("div[@class='details']/span/text()").extract_first().strip().replace("Posted ", "")
-            val = selector.xpath("div[@class='details']/div[@class='review-text']/text()").extract_first()
-            if val is not None:
-                review["content"] = val.strip().replace("\r\n", "")
-            remark_selectors = selector.xpath("div[@class='details']/div[@class='remark']")
-            for remark_selector in remark_selectors:
-                k = remark_selector.xpath("strong/text()").extract_first().lower().replace(":", "")
-                v = "".join(remark_selector.xpath("text()").extract()).strip().replace("\r\n", " ")
-                review["remark"][k] = v
-            response_selector = selector.xpath("div[@class='details']/div[@class='management-response']")
-            if len(response_selector) > 0:
-                response_selector = response_selector[0]
-                review["response"]["title"] = response_selector.xpath("div[@class='title']/text()").extract_first().strip()
-                review["response"]["content"] = response_selector.xpath("div[@class='text']/text()").extract_first().strip()
-                val = response_selector.xpath("div[@class='date-posted']/text()").extract_first().strip()
-                m = re.match(r"(.+)\sby\s*(.+)", val)
-                if m is not None:
-                    review["response"]["date"] = m.group(1)
-                    review["response"]["author"] = m.group(2)
-                else:
-                    review["response"]["author"] = re.match(r"by\s*(.+)", val).group(1).strip()
-            yield review
+        num_reviews = response.meta['num_reviews']
+        start_index = response.meta['start_index']
+        json = simplejson.loads(response.body_as_unicode())
+        total_count = int(json['data']['propertyInfo']['reviewInfo']['summary']['totalCount']['raw'])
+        last_index = int(json['data']['propertyInfo']['reviewInfo']['summary']['lastIndex'])
+        self.logger.info('Parsing GraphQL response. Hotel={}, HotelID={}, Category={}, ReviewCountInTotal={}, ReviewCountInCategory={}, StartIndex={}, LastIndex={}'.format(
+            hotel_name, hotel_id, category, num_reviews, total_count, start_index, last_index))
+        
+        for review in json['data']['propertyInfo']['reviewInfo']['reviews']:
+            item = ExpediaReviewItem(
+                review_id=review['id'].strip(),
+                author=review['author'].strip(),
+                publish_datetime=datetime.strptime(review['submissionTime']['raw'].strip(), '%Y-%m-%dT%H:%M:%SZ'),
+                content=review['text'].strip(),
+                created_datetime=datetime.utcnow(),
+                overall_rating=int(review['ratingOverall'].strip()),
+                num_helpful=int(review['helpfulReviewVotes'].strip()),
+                stay_duration=review['stayDuration'].strip(),
+                category=category,
+                superlative=review['superlative'].strip(),
+                title=review['title'].strip(),
+                locale=review['locale'].strip(),
+                location=review['userLocation'].strip(),
+                remarks_positive=review['positiveRemarks'].strip(),
+                remarks_negative=review['negativeRemarks'].strip(),
+                remarks_location=review['locationRemarks'].strip(),
+                hotel_id=hotel_id,
+                hotel_name=hotel_name)
+            if len(review['managementResponses']) > 0:
+                mgmt_resp = review['managementResponses'][0]
+                item['response_id'] = mgmt_resp['id'].strip()
+                item['response_author'] = mgmt_resp['userNickname'].strip()
+                item['response_publish_datetime'] = datetime.strptime(mgmt_resp['date'].strip(), '%Y-%m-%dT%H:%M:%SZ')
+                item['response_content'] = mgmt_resp['response'].strip()
+                item['response_display_locale'] = mgmt_resp['displayLocale'].strip()
+            yield item

@@ -7,8 +7,11 @@
 
 from random import choice
 from scrapy import signals
+# from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+# from scrapy.utils.response import response_status_message
 from fake_useragent import UserAgent
+# import time
 
 
 class RandomUserAgentMiddleware(UserAgentMiddleware):
@@ -38,13 +41,37 @@ class RandomUserAgentMiddleware(UserAgentMiddleware):
             'Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.0 Safari/536.3',
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24',
             'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36',
         ]
 
     def process_request(self, request, spider):
-        ua = self.user_agent.random
-        if ua is None:
-            ua = choice(self.user_agent_list)
+        ua = choice(self.user_agent_list)
         request.headers.setdefault('User-Agent', ua)
+
+
+# class TooManyRequestsRetryMiddleware(RetryMiddleware):
+
+#     def __init__(self, crawler):
+#         super().__init__(crawler.settings)
+#         self.crawler = crawler
+
+#     @classmethod
+#     def from_crawler(cls, crawler):
+#         return cls(crawler)
+
+#     def process_response(self, request, response, spider):
+#         if request.meta.get('dont_retry', False):
+#             return response
+#         elif response.status == 429:
+#             self.crawler.engine.pause()
+#             time.sleep(60)  # If the rate limit is renewed in a minute, put 60 seconds, and so on.
+#             self.crawler.engine.unpause()
+#             reason = response_status_message(response.status)
+#             return self._retry(request, reason, spider) or response
+#         elif response.status in self.retry_http_codes:
+#             reason = response_status_message(response.status)
+#             return self._retry(request, reason, spider) or response
+#         return response 
 
 
 class WebscraperSpiderMiddleware(object):

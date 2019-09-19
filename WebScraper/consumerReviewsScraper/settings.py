@@ -72,7 +72,8 @@ CONCURRENT_REQUESTS_PER_DOMAIN = 4
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'consumerReviewsScraper.pipelines.SaveHyoubanItemsPipeline': 100,
+    'consumerReviewsScraper.pipelines.SaveExpediaItemsPipeline': 100,
+    # 'consumerReviewsScraper.pipelines.SaveHyoubanItemsPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveXcarItemsPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveToSqlitePipeline': 100
     # 'consumerReviewsScraper.pipelines.SaveToMongoDb': 100,
