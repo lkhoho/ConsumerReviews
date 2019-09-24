@@ -1,7 +1,6 @@
 import re
 import pytz
 import json
-import requests
 from datetime import datetime, date, timedelta
 from fake_useragent import UserAgent
 from scrapy.http import Request

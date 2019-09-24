@@ -5,9 +5,6 @@ import json
 import csv
 import logging
 import sqlite3
-# import pymongo as mongo
-# from stemming.porter2 import stem
-# from scrapy.exceptions import DropItem
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from .settings import DB_NAME
 from .items.kbb import *
@@ -16,7 +13,7 @@ from .items.dianping import *
 
 
 class SaveExpediaItemsPipeline(object):
-    """ Save items of expedia.com to Sqlite 3. """
+    """ Save hotel reviews of expedia.com to Sqlite 3. """
 
     def __init__(self):
         self.conn = None
@@ -269,8 +266,6 @@ class SaveToCsvPipeline(object):
                 others_writer.writerow(KBBReviewItem.get_column_headers())
             elif spider.name.startswith("edmunds"):
                 others_writer.writerow(EdmundsReviewItem.get_column_headers())
-            elif spider.name.startswith("orbitz"):
-                others_writer.writerow(OrbitzReviewItem.get_column_headers())
         except OSError as exc:
             self.logger.error("Error: opening others file {} failed. Exception: {}".format(others_filename, exc))
 
