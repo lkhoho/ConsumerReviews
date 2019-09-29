@@ -57,7 +57,7 @@ class ExpediaReviewSpider(Spider):
     # }
 
     def start_requests(self):
-        with open(os.sep.join(['data_sources', 'expedia.json'])) as fp:
+        with open(os.sep.join(['data_sources', 'expedia.com', 'japan_vacation_hotels.json'])) as fp:
             hotel_data = simplejson.load(fp)
         target_urls = [hotel['url'] for hotel in hotel_data['hotels']]
         self.logger.info('%d target URLs to scrape.' % len(target_urls))
