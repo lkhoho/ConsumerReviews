@@ -14,12 +14,19 @@ class ExpediaReviewSpider(Spider):
         'LOG_FILE': '{}.log'.format(name),
 
         # Auto-throttling
-        'CONCURRENT_REQUESTS': 20,
+        'CONCURRENT_REQUESTS': 10,
         'DOWNLOAD_DELAY': 1,
+
+        # Retry
+        'CRAWLER_PAUSE_SECONDS': 60,
+        'RETRY_HTTP_CODES': [429],
 
         'DOWNLOADER_MIDDLEWARES': {
             'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
             'consumerReviewsScraper.middlewares.RandomUserAgentMiddleware': 400,
+
+            'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+            'consumerReviewsScraper.middlewares.TooManyRequestsRetryMiddleware': 543,
         },
     }
 
@@ -57,7 +64,7 @@ class ExpediaReviewSpider(Spider):
     # }
 
     def start_requests(self):
-        with open(os.sep.join(['data_sources', 'expedia.com', 'japan_vacation_hotels.json'])) as fp:
+        with open(os.sep.join(['data_sources', 'expedia.com', 'us_hotels.json'])) as fp:
             hotel_data = simplejson.load(fp)
         target_urls = [hotel['url'] for hotel in hotel_data['hotels']]
         self.logger.info('%d target URLs to scrape.' % len(target_urls))
@@ -177,11 +184,12 @@ class ExpediaReviewSpider(Spider):
         num_reviews = response.meta['num_reviews']
         start_index = response.meta['start_index']
         json = simplejson.loads(response.body_as_unicode())
-        total_count = int(json['data']['propertyInfo']['reviewInfo']['summary']['totalCount']['raw'])
-        last_index = int(json['data']['propertyInfo']['reviewInfo']['summary']['lastIndex'])
-        self.logger.info('Parsing GraphQL response. Hotel={}, HotelID={}, ReviewCountInTotal={}, '
-                         'ReviewCountInCategory={}, StartIndex={}, LastIndex={}'
-                         .format(hotel_name, hotel_id, num_reviews, total_count, start_index, last_index))
+        self.logger.info('Parsing GraphQL response. Hotel={}, Hotel_ID={}, ReviewCount={}, StartIndex={}'
+                         .format(hotel_name, hotel_id, num_reviews, start_index))
+
+        if json.get('data', None) is None:
+            self.logger.warn('Cannot get review data from GraphQL response. Response is %s' % json)
+            return
         
         for review in json['data']['propertyInfo']['reviewInfo']['reviews']:
             item = ExpediaReviewItem(

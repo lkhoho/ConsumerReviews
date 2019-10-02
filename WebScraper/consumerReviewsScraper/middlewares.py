@@ -5,9 +5,12 @@
 # See documentation in:
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
+import time
 from random import choice
 from scrapy import signals
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+from scrapy.downloadermiddlewares.retry import RetryMiddleware
+from scrapy.utils.response import response_status_message
 from fake_useragent import UserAgent
 
 
@@ -36,6 +39,31 @@ class RandomUserAgentMiddleware(UserAgentMiddleware):
     def process_request(self, request, spider):
         ua = choice(self.user_agent_list)
         request.headers['User-Agent'] = ua
+
+
+class TooManyRequestsRetryMiddleware(RetryMiddleware):
+
+    def __init__(self, crawler):
+        super().__init__(crawler.settings)
+        self.crawler = crawler
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
+    def process_response(self, request, response, spider):
+        if request.meta.get('dont_retry', False):
+            return response
+        elif response.status == 429:
+            self.crawler.engine.pause()
+            time.sleep(self.crawler.settings.getint('CRAWLER_PAUSE_SECONDS', 120))
+            self.crawler.engine.unpause()
+            reason = response_status_message(response.status)
+            return self._retry(request, reason, spider) or response
+        elif response.status in self.retry_http_codes:
+            reason = response_status_message(response.status)
+            return self._retry(request, reason, spider) or response
+        return response
 
 
 class WebscraperSpiderMiddleware(object):
