@@ -22,6 +22,13 @@ import nltk
 from typing import List, Dict, Set, Tuple, Union, Optional
 from nltk.tokenize import RegexpTokenizer
 from nltk.tag import pos_tag
+from nltk.corpus import sentiwordnet as swn
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+
+SentimentScore = Tuple[int, int, int]  # positive/negative/objective scores, respectively
+WordToSentimentScoreMap = Dict[str, SentimentScore]
+NoScoreWords = List[str]
 
 
 log = logging.getLogger(__name__)
@@ -177,5 +184,50 @@ def lemmatize(df: pd.DataFrame,
     return df
 
 
-def compute_sentiment_score():
+def compute_sentiment_score(df: pd.DataFrame,
+                            tagged_field: Optional[str],
+                            tagged_vocabulary: Optional[Dict[str, str]],
+                            batch_size: int = 100) -> Tuple[WordToSentimentScoreMap, NoScoreWords]:
+    """
+    Compute sentiment scores for tagged words in batches.
+    :param df: Dataframe contains tagged words that sentiment scores will be computed.
+    :param tagged_field: Name of field that contains tagged words.
+    :param tagged_vocabulary: Vocabulary with tagged words.
+    :param batch_size: Batch size. Default is 100.
+    :return: Tuple contains word to sentiment_score map and list of words that have no score.
+    """
+
+    # if tagged_field is None and tagged_vocabulary is None:
+    #     raise ValueError('Tagged field and tagged vocabulary cannot both be None.')
+    #
+    # if tagged_field is not None:
+    #     voc = {word for (word, ) df[tagged_field].to_numpy().tolist()}
+    # elif tagged_vocabulary is not None:
+    #     voc = tagged_vocabulary
     pass
+
+
+def compute_TFIDF(texts: List[str],
+                  label: Optional[str],
+                  label_values: Optional[Union[List[str], pd.Series]]) \
+        -> pd.DataFrame:
+    """
+    Compute TFIDF matrix from :texts:.
+    :param texts: A list of texts that TFIDF matrix is calculated from.
+    :param label: Name of label column. A label column indicates the category of samples (e.g. positive/negative).
+    :param label_values: Values of label column.
+    :return: Dataframe with TFIDF matrix with labels as the last column (if not None).
+    """
+
+    if (label is None) ^ (label_values is None):
+        raise ValueError('Label and label values should both be None or not None.')
+
+    vectorizer = TfidfVectorizer()
+    tfidf = vectorizer.fit_transform(texts)
+    df = pd.DataFrame(data=tfidf.toarray(), columns=vectorizer.get_feature_names())
+    if label is not None:
+        if type(label_values) == pd.Series:
+            df[label] = label_values
+        else:
+            df[label] = pd.Series(label_values)
+    return df
