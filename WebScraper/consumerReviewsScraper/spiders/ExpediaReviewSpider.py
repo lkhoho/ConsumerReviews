@@ -30,7 +30,7 @@ class ExpediaReviewSpider(Spider):
         },
     }
 
-    num_reviews_per_request = 100
+    num_reviews_per_request = 500
 
     # specific_category_filters = {
     #     'Couples': {
