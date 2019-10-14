@@ -58,7 +58,7 @@ pos_mapping = {
 #down_sampling(smaller, larger, 'ti')
 
 if __name__ == '__main__':
-    df = pd.read_csv(r'C:\Users\lkhoho\OneDrive\Projects\text_reviews\data\bellagio.csv', encoding='utf-8',)
+    df = pd.read_csv(r'C:\Users\lkhoho\OneDrive\Projects\text_reviews\data\bellagio.csv')
     df['content'] = df['content'].astype(str)
     logging.info('Original shape={}'.format(df.shape))
 

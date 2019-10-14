@@ -54,15 +54,15 @@ def standardize_text(df: pd.DataFrame,
     df[output_field] = df[output_field].str.replace("'m", ' am')
     df[output_field] = df[output_field].str.replace("’m", ' am')
     df[output_field] = df[output_field].str.replace("´m", ' am')
-    
+
     df[output_field] = df[output_field].str.replace("'ve", ' have')
     df[output_field] = df[output_field].str.replace("’ve", ' have')
     df[output_field] = df[output_field].str.replace("´ve", ' have')
-    
+
     df[output_field] = df[output_field].str.replace("'d", ' would')
     df[output_field] = df[output_field].str.replace("’d", ' would')
     df[output_field] = df[output_field].str.replace("´d", ' would')
-    
+
     df[output_field] = df[output_field].str.replace("n't", ' not')
     df[output_field] = df[output_field].str.replace("n’t", ' not')
     df[output_field] = df[output_field].str.replace("n´t", ' not')
@@ -70,7 +70,7 @@ def standardize_text(df: pd.DataFrame,
     df[output_field] = df[output_field].str.replace("'ll", ' will')
     df[output_field] = df[output_field].str.replace("’ll", ' will')
     df[output_field] = df[output_field].str.replace("´ll", ' will')
-    
+
     df[output_field] = df[output_field].str.replace('/', ' ')
     df[output_field] = df[output_field].str.replace('\.{2,}', '.')
     df[output_field] = df[output_field].str.replace('!{2,}', '!')
