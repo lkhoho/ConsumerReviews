@@ -19,8 +19,9 @@ Description: Clean up data so that a model can learn meaningful features and not
 import logging
 import pandas as pd
 import nltk
+import emoji
 from typing import List, Dict, Set, Tuple, Union, Optional
-from nltk.tokenize import RegexpTokenizer
+from nltk.tokenize import RegexpTokenizer, regexp_tokenize
 from nltk.tag import pos_tag
 from nltk.corpus import sentiwordnet as swn
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -36,41 +37,74 @@ log = logging.getLogger(__name__)
 
 def standardize_text(df: pd.DataFrame,
                      text_field: str,
-                     output_field: Optional[str] = None) -> pd.DataFrame:
+                     output_field: str) -> pd.DataFrame:
     """
     Remove irrelevant characters, URLs and convert all characters to lowercase for texts in dataframe.
     :param df: Dataframe that contains texts to be cleaned.
     :param text_field: Name of field that contains texts.
-    :param output_field: Name of output text field. None means original field is replaced.
+    :param output_field: Name of output text field.
     :return: A pandas dataframe with cleaned texts in either new column of replacing original texts.
     """
 
-    out_field = output_field if output_field is not None else text_field
-    df[out_field] = df[text_field].str.replace(r'http\S+', '')
-    df[out_field] = df[text_field].str.replace(r'http', '')
-    df[out_field] = df[text_field].str.replace(r'@\S+', '')
-    df[out_field] = df[text_field].str.replace(r'[^A-Za-z0-9(),!?@\'\`\"\_\n]', ' ')
-    df[out_field] = df[text_field].str.replace(r'@', 'at')
-    df[out_field] = df[text_field].str.lower()
+
+    df[output_field] = df[text_field].apply(
+        lambda x: emoji.get_emoji_regexp().sub(u'', x)
+    )
+
+    df[output_field] = df[output_field].str.replace("'m", ' am')
+    df[output_field] = df[output_field].str.replace("’m", ' am')
+    df[output_field] = df[output_field].str.replace("´m", ' am')
+    
+    df[output_field] = df[output_field].str.replace("'ve", ' have')
+    df[output_field] = df[output_field].str.replace("’ve", ' have')
+    df[output_field] = df[output_field].str.replace("´ve", ' have')
+    
+    df[output_field] = df[output_field].str.replace("'d", ' would')
+    df[output_field] = df[output_field].str.replace("’d", ' would')
+    df[output_field] = df[output_field].str.replace("´d", ' would')
+    
+    df[output_field] = df[output_field].str.replace("n't", ' not')
+    df[output_field] = df[output_field].str.replace("n’t", ' not')
+    df[output_field] = df[output_field].str.replace("n´t", ' not')
+
+    df[output_field] = df[output_field].str.replace("'ll", ' will')
+    df[output_field] = df[output_field].str.replace("’ll", ' will')
+    df[output_field] = df[output_field].str.replace("´ll", ' will')
+    
+    df[output_field] = df[output_field].str.replace('/', ' ')
+    df[output_field] = df[output_field].str.replace('\.{2,}', '.')
+    df[output_field] = df[output_field].str.replace('!{2,}', '!')
+    df[output_field] = df[output_field].str.replace('\?{2,}', '?')
+    df[output_field] = df[output_field].str.replace('€+', '')
+    df[output_field] = df[output_field].str.replace('[0-9$&~\\()[\]{}<>%\'"“”…+\-_=*]+', '')
+    df[output_field] = df[output_field].str.replace(r'http\S+', '')
+    df[output_field] = df[output_field].str.replace(r'http', '')
+    df[output_field] = df[output_field].str.replace(r'@\S+', '')
+    df[output_field] = df[output_field].str.replace(r'@', 'at')
+    df[output_field] = df[output_field].str.lower()
+    df[output_field] = df[output_field].astype(str)
     return df
 
 
-def remove_stopwords(df: pd.DataFrame,
+def remove_words(df: pd.DataFrame,
                      text_field: str,
                      stopwords: Set[str],
+                     short_words_size: int = 3,
                      output_field: Optional[str] = None) -> pd.DataFrame:
     """
-    Remove stopwords in texts in dataframe.
+    Remove stopwords and short words in texts in dataframe.
     :param df: Dataframe that contains stopwords to be removed.
     :param text_field: Name of field that contains texts.
     :param stopwords: A set of stopwords.
+    :param short_words_size: Length of short words to remove. Default is 3.
     :param output_field: Name of output text field. None means original field is replaced.
     :return: A pandas dataframe with stopwords removed as either new column or replacing original texts.
     """
 
     out_field = output_field if output_field is not None else text_field
     df[out_field] = df[text_field].apply(
-        lambda x: ' '.join([word for word in x.split() if word not in stopwords]))
+        lambda x: ' '.join([word for word in x.split() if word not in stopwords and len(word) >= short_words_size])
+    )
     return df
 
 
@@ -85,33 +119,26 @@ def tokenize(df: pd.DataFrame,
     :return: A pandas dataframe that tokens of texts are computed as new column.
     """
 
-    tokenizer = RegexpTokenizer(r'\w+')  # tokenize word-by-word
-    df[output_field] = df[text_field].apply(tokenizer.tokenize)
+    df[output_field] = df[text_field].apply(
+        lambda x: ' '.join(regexp_tokenize(x, pattern=r'[\s,.?!-:]+', gaps=True, discard_empty=True))
+    )
     return df
 
 
-def compute_vocabulary(df: pd.DataFrame,
-                       token_field: str,
-                       output_field: Optional[str] = None) -> Optional[Set[str]]:
+def compute_vocabulary(df: pd.DataFrame, 
+                       token_field: str) -> Set[str]:
     """
-    If :output_field: is None, compute vocabulary of whole dataset and return the result. Otherwise,
-    compute vocabulary for each sample and store the result in :output_field: column.
+    Ccompute vocabulary of whole dataset and return the result.
     :param df: Dataframe that contains texts to compute vocabulary from.
     :param token_field: Name of the field that contains tokens.
-    :param output_field: Name of the field that store computed vocabulary.
-    :return: The computed vocabulary of whole dataset, or for every-sample-vocabulary case, None.
+    :return: The computed vocabulary of whole dataset.
     """
 
-    if output_field is None:
-        # compute vocabulary for whole dataset
-        voc = set()
-        for _, tokens in df[token_field].items():
-            voc |= set(tokens)
-        return voc
-    else:
-        # compute vocabulary for each sample
-        df[output_field] = df[token_field].apply(lambda x: set(x))
-        return None
+    voc = set()
+    for _, tokens in df[token_field].items():
+        voc |= set(tokens.split())
+    return voc
+
 
 
 def tag_vocabulary(vocabulary: List[str],
