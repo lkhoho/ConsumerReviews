@@ -1,3 +1,4 @@
+alias af="airflow"
 alias dkps="docker ps"
 alias dkup="docker-compose -p consumer_reviews -f $CONSUMER_REVIEWS_HOME/dev/scripts/docker-compose.yml up -d --remove-orphans"
 alias dkdown="docker-compose -p consumer_reviews -f $CONSUMER_REVIEWS_HOME/dev/scripts/docker-compose.yml down --remove-orphans"
