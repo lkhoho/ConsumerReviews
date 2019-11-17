@@ -11,15 +11,15 @@ from scrapy import signals
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.utils.response import response_status_message
-from fake_useragent import UserAgent
+# from fake_useragent import UserAgent
 
 
 class RandomUserAgentMiddleware(UserAgentMiddleware):
 
     def __init__(self, user_agent='Scrapy'):
         super().__init__(user_agent=user_agent)
-        self.user_agent = UserAgent()
-        self.user_agent.update()
+        # self.user_agent = UserAgent()
+        # self.user_agent.update()
 
         # a default user agent list
         self.user_agent_list = [
