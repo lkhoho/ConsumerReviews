@@ -72,7 +72,8 @@ ROBOTSTXT_OBEY = False  # some website does not allow scrape user page
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'consumerReviewsScraper.pipelines.SaveExpediaItemsPipeline': 100,
+    'consumerReviewsScraper.pipelines.SqlItemPipeline': 100,
+    # 'consumerReviewsScraper.pipelines.SaveExpediaItemsPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveHyoubanItemsPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveXcarItemsPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveToSqlitePipeline': 100
@@ -108,6 +109,7 @@ ITEM_PIPELINES = {
 # FEED_EXPORT_FIELDS = ["content"]
 
 DB_PROVIDER = 'sqlite'
+
 if platform.system() == 'Windows':
     DB_NAME = 'C:\\Users\\lkhoho\\OneDrive\\consumer_reviews.db'
 elif platform.system() == 'Linux':
@@ -116,3 +118,5 @@ elif platform.system() == 'Darwin':
     DB_NAME = '/Users/keliu/OneDrive/consumer_reviews.db'
 else:
     raise ValueError('Unsupported platform: ' + platform.system())
+
+DB_CONN_STR = '{driver}:///{name}'.format(driver=DB_PROVIDER, name=DB_NAME)

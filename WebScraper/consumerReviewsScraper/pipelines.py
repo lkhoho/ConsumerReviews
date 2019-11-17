@@ -1,151 +1,191 @@
 # -*- coding: utf-8 -*-
 
-import re
-import json
-import csv
-import logging
-import sqlite3
-from scrapy.utils.serialize import ScrapyJSONEncoder
-from .settings import DB_NAME
-from .items.kbb import *
-from .items.edmunds import *
-from .items.dianping import *
+# import re
+# import json
+# import csv
+# import logging
+# from scrapy.utils.serialize import ScrapyJSONEncoder
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
+from .models import db_connect, create_bizrate_tables, BizrateStore, BizrateReview
+from .items.bizrate import BizrateStoreItem, BizrateReviewItem
+# from .items.kbb import KBBReviewItem
+# from .items.edmunds import EdmundsReviewItem
+# from .items.dianping import DPBadge, DPBonus, DPCommunity, DPMember, DPReview, DPTopic
 
 
-class SaveExpediaItemsPipeline(object):
-    """ Save hotel reviews of expedia.com to Sqlite 3. """
+class SqlItemPipeline(object):
+    """
+    Save items to relational database (through Sqlalchemy).
+    """
 
     def __init__(self):
-        self.conn = None
+        self.engine = None
+        self.session = None
 
     def open_spider(self, spider):
-        self.conn = sqlite3.connect(DB_NAME)
-        spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
+        self.engine = db_connect()
+        create_bizrate_tables(self.engine)
+        spider.logger.info('Connected to Sqlite file %s' % self.engine.engine.url.database)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
     
     def close_spider(self, spider):
-        self.conn.close()
-        spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
+        self.session.close_all()
+        spider.logger.info('Disconnected to Sqlite file %s ' % self.engine.engine.url.database)
 
     def process_item(self, item, spider):
-        item.upsert(self.conn)
-        return item
-
-
-class SaveHyoubanItemsPipeline(object):
-    """ Save items of hyouban.com to Sqlite 3. """
-
-    def __init__(self):
-        self.conn = None
-
-    def open_spider(self, spider):
-        self.conn = sqlite3.connect(DB_NAME)
-        spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
-    
-    def close_spider(self, spider):
-        self.conn.close()
-        spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
-
-    def process_item(self, item, spider):
-        item.upsert(self.conn)
-        return item
-
-
-class SaveXcarItemsPipeline(object):
-    """ Save items of xcar.com to Sqlite 3. """
-
-    def __init__(self):
-        self.conn = None
-
-    def open_spider(self, spider):
-        self.conn = sqlite3.connect(DB_NAME)
-        spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
-
-    def close_spider(self, spider):
-        self.conn.close()
-        spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
-
-    def process_item(self, item, spider):
-        item.upsert(self.conn)
-        return item
-
-
-class SaveDianpingItemsPipeline(object):
-    def __init__(self):
-        self.db_name = '/Users/keliu/consumer_reviews_working/consumer_reviews.db'
-        self.conn = None
-        self.db_entity_dao = None
-
-    def open_spider(self, spider):
-        self.conn = sqlite3.connect(self.db_name)
-        spider.logger.info('Connected to Sqlite file %s' % self.db_name)
-
-    def close_spider(self, spider):
-        self.conn.close()
-        spider.logger.info('Disconnected to Sqlite file %s ' % self.db_name)
-
-    def process_item(self, item, spider):
-        item.upsert(self.conn)
-        return item
-
-
-class TokenizationPipeline(object):
-    """ Tokenize review item content. """
-
-    def __init__(self):
-        self.tokenization_regex = r"[\s()<>[\]{}|,.:;?!&$'\"]"
-
-    def process_item(self, item, spider):
-        text = item["content"].lower()
-        text = re.sub(r"['?,\-\\!\"]", " ", text)
-        item["content"] = self.tokenize(text)
-        return item
-
-    def tokenize(self, text):
-        tokens = []
-        words = re.split(self.tokenization_regex, text.lower())
-        for word in words:
-            stripped = word.strip()
-            if len(stripped) > 1:
-                tokens.append(stripped)
-        return tokens
-
-
-class RemoveStopwordsPipeline(object):
-    """ Remove stopwords and generate features for review content. """
-
-    def __init__(self):
-        self.stopwords_filename = "stopwords.txt"
-        self.stopwords_fp = None
-        self.stopwords = set()
-        self.logger = logging.getLogger(__name__)
-
-    def open_spider(self, spider):
+        if isinstance(item, BizrateStoreItem):
+            model = BizrateStore(**item)
+        elif isinstance(item, BizrateReviewItem):
+            model = BizrateReview(**item)
+        else:
+            model = None
         try:
-            self.stopwords_fp = open(self.stopwords_filename)
-        except OSError as exc:
-            self.logger.error("Error: opening stopwords file {} failed. Exception: {}".format(self.stopwords_filename, exc))
-
-        for word in self.stopwords_fp:
-            self.stopwords.add(word)
-
-        self.stopwords_fp.close()
-
-    def process_item(self, item, spider):
-        text = item["content"].lower()
-
-        # remove comma in numbers
-        numbers = re.findall(r"\s(\d+[,\d]*\d+)\s?", text)
-        for number in numbers:
-            text = text.replace(number, number.replace(",", ""))
-
-        # remove other commas
-        text = re.sub(r"['?,\-\\!\"]", " ", text)
-        word_arr = text.split()
-        for word in word_arr:
-            if word in self.stopwords:
-                word_arr.remove(word)
-        item["content"] = " ".join(word_arr)
+            self.session.add(model)
+            self.session.commit()
+        except SQLAlchemyError as err:
+            self.session.rollback()
+            spider.logger.warn('Failed to save item to database. Item={}'.format(item))
+            spider.logger.error(str(err))
+        
         return item
+
+
+# class SaveExpediaItemsPipeline(object):
+#     """ Save hotel reviews of expedia.com to Sqlite 3. """
+
+#     def __init__(self):
+#         self.conn = None
+
+#     def open_spider(self, spider):
+#         self.conn = sqlite3.connect(DB_NAME)
+#         spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
+    
+#     def close_spider(self, spider):
+#         self.conn.close()
+#         spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
+
+#     def process_item(self, item, spider):
+#         item.upsert(self.conn)
+#         return item
+
+
+# class SaveHyoubanItemsPipeline(object):
+#     """ Save items of hyouban.com to Sqlite 3. """
+
+#     def __init__(self):
+#         self.conn = None
+
+#     def open_spider(self, spider):
+#         self.conn = sqlite3.connect(DB_NAME)
+#         spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
+    
+#     def close_spider(self, spider):
+#         self.conn.close()
+#         spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
+
+#     def process_item(self, item, spider):
+#         item.upsert(self.conn)
+#         return item
+
+
+# class SaveXcarItemsPipeline(object):
+#     """ Save items of xcar.com to Sqlite 3. """
+
+#     def __init__(self):
+#         self.conn = None
+
+#     def open_spider(self, spider):
+#         self.conn = sqlite3.connect(DB_NAME)
+#         spider.logger.info('Connected to Sqlite file %s' % DB_NAME)
+
+#     def close_spider(self, spider):
+#         self.conn.close()
+#         spider.logger.info('Disconnected to Sqlite file %s ' % DB_NAME)
+
+#     def process_item(self, item, spider):
+#         item.upsert(self.conn)
+#         return item
+
+
+# class SaveDianpingItemsPipeline(object):
+#     def __init__(self):
+#         self.db_name = '/Users/keliu/consumer_reviews_working/consumer_reviews.db'
+#         self.conn = None
+#         self.db_entity_dao = None
+
+#     def open_spider(self, spider):
+#         self.conn = sqlite3.connect(self.db_name)
+#         spider.logger.info('Connected to Sqlite file %s' % self.db_name)
+
+#     def close_spider(self, spider):
+#         self.conn.close()
+#         spider.logger.info('Disconnected to Sqlite file %s ' % self.db_name)
+
+#     def process_item(self, item, spider):
+#         item.upsert(self.conn)
+#         return item
+
+
+# class TokenizationPipeline(object):
+#     """ Tokenize review item content. """
+
+#     def __init__(self):
+#         self.tokenization_regex = r"[\s()<>[\]{}|,.:;?!&$'\"]"
+
+#     def process_item(self, item, spider):
+#         text = item["content"].lower()
+#         text = re.sub(r"['?,\-\\!\"]", " ", text)
+#         item["content"] = self.tokenize(text)
+#         return item
+
+#     def tokenize(self, text):
+#         tokens = []
+#         words = re.split(self.tokenization_regex, text.lower())
+#         for word in words:
+#             stripped = word.strip()
+#             if len(stripped) > 1:
+#                 tokens.append(stripped)
+#         return tokens
+
+
+# class RemoveStopwordsPipeline(object):
+#     """ Remove stopwords and generate features for review content. """
+
+#     def __init__(self):
+#         self.stopwords_filename = "stopwords.txt"
+#         self.stopwords_fp = None
+#         self.stopwords = set()
+#         self.logger = logging.getLogger(__name__)
+
+#     def open_spider(self, spider):
+#         try:
+#             self.stopwords_fp = open(self.stopwords_filename)
+#         except OSError as exc:
+#             self.logger.error("Error: opening stopwords file {} failed. Exception: {}".format(self.stopwords_filename, exc))
+
+#         for word in self.stopwords_fp:
+#             self.stopwords.add(word)
+
+#         self.stopwords_fp.close()
+
+#     def process_item(self, item, spider):
+#         text = item["content"].lower()
+
+#         # remove comma in numbers
+#         numbers = re.findall(r"\s(\d+[,\d]*\d+)\s?", text)
+#         for number in numbers:
+#             text = text.replace(number, number.replace(",", ""))
+
+#         # remove other commas
+#         text = re.sub(r"['?,\-\\!\"]", " ", text)
+#         word_arr = text.split()
+#         for word in word_arr:
+#             if word in self.stopwords:
+#                 word_arr.remove(word)
+#         item["content"] = " ".join(word_arr)
+#         return item
 
 
 # class StemmingReviewsPipeline(object):
@@ -203,114 +243,114 @@ class RemoveStopwordsPipeline(object):
 #             raise DropItem("Item is already in MongoDB. Will be dropped.")
 
 
-class SaveRawItemPipeline(object):
-    """ Save raw items in JSON format. """
+# class SaveRawItemPipeline(object):
+#     """ Save raw items in JSON format. """
 
-    def __init__(self):
-        self.items = []
-        self.fp = None
-        self.encoder = ScrapyJSONEncoder()
-        self.logger = logging.getLogger(__name__)
+#     def __init__(self):
+#         self.items = []
+#         self.fp = None
+#         self.encoder = ScrapyJSONEncoder()
+#         self.logger = logging.getLogger(__name__)
 
-    def open_spider(self, spider):
-        filename = spider.name + "_raw.json"
-        try:
-            self.fp = open(filename, "a")
-        except OSError as exc:
-            self.logger.error("Error: opening JSON file {} failed. Exception: {}".format(filename, exc))
+#     def open_spider(self, spider):
+#         filename = spider.name + "_raw.json"
+#         try:
+#             self.fp = open(filename, "a")
+#         except OSError as exc:
+#             self.logger.error("Error: opening JSON file {} failed. Exception: {}".format(filename, exc))
 
-    def close_spider(self, spider):
-        json.dump(self.items, self.fp)
-        self.fp.close()
+#     def close_spider(self, spider):
+#         json.dump(self.items, self.fp)
+#         self.fp.close()
 
-    def process_item(self, item, spider):
-        self.items.append(self.encoder.encode(item))
-        return item
+#     def process_item(self, item, spider):
+#         self.items.append(self.encoder.encode(item))
+#         return item
 
 
-class SaveToCsvPipeline(object):
-    """ Export items in CSV format. """
+# class SaveToCsvPipeline(object):
+#     """ Export items in CSV format. """
 
-    def __init__(self):
-        self.pos_features_fp = None
-        self.neg_features_fp = None
-        self.others_fp = None
-        self.logger = logging.getLogger(__name__)
+#     def __init__(self):
+#         self.pos_features_fp = None
+#         self.neg_features_fp = None
+#         self.others_fp = None
+#         self.logger = logging.getLogger(__name__)
 
-    def open_spider(self, spider):
-        if getattr(spider, "is_pos_neg_separated", False):
-            pos_features_filename = spider.name + "_features_pos.csv"
-            neg_features_filename = spider.name + "_features_neg.csv"
-            try:
-                self.pos_features_fp = open(pos_features_filename, "a")
-            except OSError as exc:
-                self.logger.error("Error: opening features file {} failed. Exception: {}".format(pos_features_filename, exc))
+#     def open_spider(self, spider):
+#         if getattr(spider, "is_pos_neg_separated", False):
+#             pos_features_filename = spider.name + "_features_pos.csv"
+#             neg_features_filename = spider.name + "_features_neg.csv"
+#             try:
+#                 self.pos_features_fp = open(pos_features_filename, "a")
+#             except OSError as exc:
+#                 self.logger.error("Error: opening features file {} failed. Exception: {}".format(pos_features_filename, exc))
 
-            try:
-                self.neg_features_fp = open(neg_features_filename, "a")
-            except OSError as exc:
-                self.logger.error("Error: opening features file {} failed. Exception: {}".format(neg_features_filename, exc))
-        else:
-            features_filename = spider.name + "_features.csv"
-            try:
-                self.pos_features_fp = open(features_filename, "a")
-            except OSError as exc:
-                self.logger.error("Error: opening features file {} failed. Exception: {}".format(features_filename, exc))
+#             try:
+#                 self.neg_features_fp = open(neg_features_filename, "a")
+#             except OSError as exc:
+#                 self.logger.error("Error: opening features file {} failed. Exception: {}".format(neg_features_filename, exc))
+#         else:
+#             features_filename = spider.name + "_features.csv"
+#             try:
+#                 self.pos_features_fp = open(features_filename, "a")
+#             except OSError as exc:
+#                 self.logger.error("Error: opening features file {} failed. Exception: {}".format(features_filename, exc))
 
-        others_filename = spider.name + "_others.csv"
-        try:
-            self.others_fp = open(others_filename, "a")
-            others_writer = csv.writer(self.others_fp, delimiter=",", quoting=csv.QUOTE_ALL)
+#         others_filename = spider.name + "_others.csv"
+#         try:
+#             self.others_fp = open(others_filename, "a")
+#             others_writer = csv.writer(self.others_fp, delimiter=",", quoting=csv.QUOTE_ALL)
 
-            if spider.name.startswith("kbb"):
-                others_writer.writerow(KBBReviewItem.get_column_headers())
-            elif spider.name.startswith("edmunds"):
-                others_writer.writerow(EdmundsReviewItem.get_column_headers())
-        except OSError as exc:
-            self.logger.error("Error: opening others file {} failed. Exception: {}".format(others_filename, exc))
+#             if spider.name.startswith("kbb"):
+#                 others_writer.writerow(KBBReviewItem.get_column_headers())
+#             elif spider.name.startswith("edmunds"):
+#                 others_writer.writerow(EdmundsReviewItem.get_column_headers())
+#         except OSError as exc:
+#             self.logger.error("Error: opening others file {} failed. Exception: {}".format(others_filename, exc))
 
-    def close_spider(self, spider):
-        self.pos_features_fp.close()
+#     def close_spider(self, spider):
+#         self.pos_features_fp.close()
 
-        if self.neg_features_fp is not None:
-            self.neg_features_fp.close()
+#         if self.neg_features_fp is not None:
+#             self.neg_features_fp.close()
 
-        self.others_fp.close()
+#         self.others_fp.close()
 
-    def process_item(self, item, spider):
-        others_writer = csv.writer(self.others_fp, delimiter=",", quoting=csv.QUOTE_ALL)
-        if type(item).__name__ == "KBBReviewItem":
-            others_writer.writerow(item.get_column_values())
-        elif type(item).__name__ == "EdmundsReviewItem":
-            others_writer.writerow(item.get_column_values())
-        elif type(item).__name__ == "OrbitzReviewItem":
-            others_writer.writerow(item.get_column_values())
+#     def process_item(self, item, spider):
+#         others_writer = csv.writer(self.others_fp, delimiter=",", quoting=csv.QUOTE_ALL)
+#         if type(item).__name__ == "KBBReviewItem":
+#             others_writer.writerow(item.get_column_values())
+#         elif type(item).__name__ == "EdmundsReviewItem":
+#             others_writer.writerow(item.get_column_values())
+#         elif type(item).__name__ == "OrbitzReviewItem":
+#             others_writer.writerow(item.get_column_values())
 
-        text = SaveToCsvPipeline.__tokens_to_str(item["content"])
-        item["content"] = text
-        if getattr(spider, "is_pos_neg_separated", False):
-            try:
-                if item["will_recommend"] == 1:
-                    features_writer = csv.writer(self.pos_features_fp, quoting=csv.QUOTE_ALL)
-                    features_writer.writerow(item["content"].split(","))
-                elif item["will_recommend"] == 0:
-                    features_writer = csv.writer(self.neg_features_fp, quoting=csv.QUOTE_ALL)
-                    features_writer.writerow(item["content"].split(","))
-                else:
-                    self.logger.error("Error: value of will_recommend attribute is unknown.")
-            except KeyError:
-                self.logger.error("Error: item do not have will_recommend attribute.")
-        else:
-            features_writer = csv.writer(self.pos_features_fp, quoting=csv.QUOTE_ALL)
-            features_writer.writerow(item["content"].split(","))
-        return item
+#         text = SaveToCsvPipeline.__tokens_to_str(item["content"])
+#         item["content"] = text
+#         if getattr(spider, "is_pos_neg_separated", False):
+#             try:
+#                 if item["will_recommend"] == 1:
+#                     features_writer = csv.writer(self.pos_features_fp, quoting=csv.QUOTE_ALL)
+#                     features_writer.writerow(item["content"].split(","))
+#                 elif item["will_recommend"] == 0:
+#                     features_writer = csv.writer(self.neg_features_fp, quoting=csv.QUOTE_ALL)
+#                     features_writer.writerow(item["content"].split(","))
+#                 else:
+#                     self.logger.error("Error: value of will_recommend attribute is unknown.")
+#             except KeyError:
+#                 self.logger.error("Error: item do not have will_recommend attribute.")
+#         else:
+#             features_writer = csv.writer(self.pos_features_fp, quoting=csv.QUOTE_ALL)
+#             features_writer.writerow(item["content"].split(","))
+#         return item
 
-    @staticmethod
-    def __tokens_to_str(tokens):
-        s = ""
-        if len(tokens) > 0:
-            s += tokens[0]
-            for i in range(1, len(tokens)):
-                s += ","
-                s += tokens[i]
-        return s
+#     @staticmethod
+#     def __tokens_to_str(tokens):
+#         s = ""
+#         if len(tokens) > 0:
+#             s += tokens[0]
+#             for i in range(1, len(tokens)):
+#                 s += ","
+#                 s += tokens[i]
+#         return s

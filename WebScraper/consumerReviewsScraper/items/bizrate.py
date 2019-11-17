@@ -1,42 +1,77 @@
-import hashlib
 import scrapy
-from .base import ConsumerReview, MongoDbDocument
 
-
-class BizRateReview(ConsumerReview, MongoDbDocument):
+class BizrateStoreItem(scrapy.Item):
     """
-    Represent consumer reviews on bizrate.com that can be persisted in MongoDB.
+    Stores on bizrate.com.
     """
 
-    def __init__(self):
-        super().__init__()
-        self['overallSatisfaction'] = -1
-        self['wouldShopHereAgain'] = -1
-        self['likelihoodToRecommend'] = -1
-        self['ratingsSiteExperience'] = {'easeOfFinding': -1, 'designSite': -1, 'satisfactionCheckout': -1,
-                                         'productSelection': -1, 'clarityProductInfo': -1, 'chargesStatedClearly': -1,
-                                         'priceRelativeOtherRetailers': -1, 'shippingCharges': -1,
-                                         'varietyShippingOptions': -1}
-        self['ratingsAfterPurchase'] = {'onTimeDelivery': -1, 'orderTracking': -1, 'productMetExpectations': -1,
-                                        'customerSupport': -1, 'productAvailability': -1, 'returnsProcess': -1}
-        self['reviewAfterPurchase'] = {'author': '', 'date': '', 'title': '', 'content': ''}
-        self['reviewStore'] = ''
-        self['tags'] = ['review']
+    store_id = scrapy.Field()
+    name = scrapy.Field()
+    description = scrapy.Field()
+    website = scrapy.Field()
+    is_certified = scrapy.Field()
+    award_year = scrapy.Field()
+    award_tier = scrapy.Field()
+    award_won_years = scrapy.Field()
+    created_datetime = scrapy.Field()
+    
+    # overall ratings
+    overall_satisfaction = scrapy.Field()
+    shop_again = scrapy.Field()
+    to_recommend = scrapy.Field()
+    
+    # site and shopping experience ratings
+    exp_ease_to_find = scrapy.Field()
+    exp_site_design = scrapy.Field()
+    exp_satisfaction_checkout = scrapy.Field()
+    exp_product_selection = scrapy.Field()
+    exp_clarity_product_info = scrapy.Field()
+    exp_charges_clearly = scrapy.Field()
+    exp_price_relative_other = scrapy.Field()
+    exp_shipping_charges = scrapy.Field()
+    exp_variety_shipping = scrapy.Field()
+    
+    # after purchase ratings
+    after_deliver_ontime = scrapy.Field()
+    after_order_tracking = scrapy.Field()
+    after_product_met_expectations = scrapy.Field()
+    after_customer_support = scrapy.Field()
+    after_product_availability = scrapy.Field()
+    after_returns_process = scrapy.Field()
 
-    def computeFingerprint(self):
-        h = hashlib.md5()
-        h.update(self['author'].encode())
-        h.update(self['date'].encode())
-        h.update(self['title'].encode())
-        h.update(self['content'].encode())
-        avg = (self['overallSatisfaction'] + self['likelihoodToRecommend'] + self['wouldShopHereAgain']) / 3.0
-        h.update(str(avg).encode())
-        return h.hexdigest()
 
-    overallSatisfaction = scrapy.Field()
-    wouldShopHereAgain = scrapy.Field()
-    likelihoodToRecommend = scrapy.Field()
-    ratingsSiteExperience = scrapy.Field()
-    ratingsAfterPurchase = scrapy.Field()
-    reviewAfterPurchase = scrapy.Field()
-    reviewStore = scrapy.Field()
+class BizrateReviewItem(scrapy.Item):
+    """
+    Review on bizrate.com.
+    """
+
+    review_id = scrapy.Field()
+    store_id = scrapy.Field()
+    author = scrapy.Field()
+    before_purchase_publish_date = scrapy.Field()
+    before_purchase_content = scrapy.Field()
+    after_purchase_publish_date = scrapy.Field()
+    after_purchase_content = scrapy.Field()
+    overall_satisfaction = scrapy.Field()
+    shop_again = scrapy.Field()
+    to_recommend = scrapy.Field()
+    created_datetime = scrapy.Field()
+    
+    # site and shopping experience ratings
+    exp_ease_to_find = scrapy.Field()
+    exp_site_design = scrapy.Field()
+    exp_satisfaction_checkout = scrapy.Field()
+    exp_product_selection = scrapy.Field()
+    exp_clarity_product_info = scrapy.Field()
+    exp_charges_clearly = scrapy.Field()
+    exp_price_relative_other = scrapy.Field()
+    exp_shipping_charges = scrapy.Field()
+    exp_variety_shipping = scrapy.Field()
+    
+    # after purchase ratings
+    after_deliver_ontime = scrapy.Field()
+    after_order_tracking = scrapy.Field()
+    after_product_met_expectations = scrapy.Field()
+    after_customer_support = scrapy.Field()
+    after_product_availability = scrapy.Field()
+    after_returns_process = scrapy.Field()
