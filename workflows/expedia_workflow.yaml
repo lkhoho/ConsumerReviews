@@ -1,0 +1,51 @@
+common:
+  working_dir: /Users/keliu/consumer_reviews_working
+
+setup:
+  data_pathname: '/Users/keliu/OneDrive/Projects/text_reviews/data/jp_reviews_en.csv'
+
+rebalance:
+  label_field_name: posneg
+  label_values:
+    - 'pos'
+    - 'neg'
+  random_state: 37
+  include_index: false
+
+lemmatization:
+  text_field_name: content
+  stopwords: resource/stopwords.txt
+  mode: LemmatizationMode.VOCABULARY
+  pos_tagger:
+    model: lib/stanford-postagger/models/english-left3words-distsim.tagger
+    jar: lib/stanford-postagger/stanford-postagger.jar
+    java_options: -Xms512m -Xmx4g
+    pos_mapping:
+      JJ: a
+      JJR: a
+      JJS: a
+      NN: n
+      NNP: n
+      NNS: n
+      NNPS: n
+      RB: r
+      RBR: r
+      RBS: r
+      VB: v
+      VBD: v
+      VBG: v
+      VBN: v
+      VBP: v
+      VBZ: v
+    invalid_pos: x
+  include_index: false
+
+feature_generation:
+  text_field_name: lemmatized
+  label_field_name: posneg
+  include_index: false
+
+feature_ranking:
+  mode: FeatureRankingMode.CHI_SQUARE
+  text_field: lemmatized
+  label_field: posneg
