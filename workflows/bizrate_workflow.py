@@ -8,7 +8,7 @@ from sklearn.svm import SVC
 
 sys.path.append(os.getenv('WSHOME', '/Users/keliu/Developer/python/ConsumerReviews'))
 from preprocessing.io import fetch_bizrate_all_fields_by_store
-from preprocessing.balance_samples import over_sampling_reviews
+from preprocessing.balance_samples import rebalance_reviews
 from preprocessing.curated_attributes import site_experience_ratings, CuratedAttribute, compute_curated_attributes
 from preprocessing.split import predefined_range_definitions, split_dataset
 from preprocessing.lemmatization import lemmatize, compute_sentiment_score, clean_undesired
@@ -75,7 +75,7 @@ for store in bizrate_args['stores']:
                                  })
 
     over_sampling_task = PythonOperator(task_id='over_sampling__{}'.format(store), dag=dag, provide_context=True,
-                                        python_callable=over_sampling_reviews,
+                                        python_callable=rebalance_reviews,
                                         op_kwargs={
                                             'target_fields': [attrib.output_name for attrib in list(
                                                 filter(lambda x: x.as_label, bizrate_args['curated_attributes'])
