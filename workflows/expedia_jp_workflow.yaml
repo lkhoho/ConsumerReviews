@@ -2,7 +2,7 @@ common:
   working_dir: /Users/keliu/consumer_reviews_working
 
 setup:
-  data_pathname: '/Users/keliu/OneDrive/Projects/text_reviews/data/jp_reviews_en.csv'
+  data_pathname: '/Users/keliu/Desktop/japan_hotel_reviews_en.csv'
 
 lemmatization:
   text_field_name: content
