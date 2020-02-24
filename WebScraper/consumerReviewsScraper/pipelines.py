@@ -7,8 +7,11 @@
 # from scrapy.utils.serialize import ScrapyJSONEncoder
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-from .models import db_connect, create_bizrate_tables, BizrateStore, BizrateReview
+from .models.main import db_connect, create_bizrate_tables, create_expedia_tables
+from .models.bizrate import BizrateStore, BizrateReview
+from .models.expedia import ExpediaHotel, ExpediaReview
 from .items.bizrate import BizrateStoreItem, BizrateReviewItem
+from .items.expedia import ExpediaHotelItem, ExpediaReviewItem
 # from .items.kbb import KBBReviewItem
 # from .items.edmunds import EdmundsReviewItem
 # from .items.dianping import DPBadge, DPBonus, DPCommunity, DPMember, DPReview, DPTopic
@@ -26,6 +29,7 @@ class SqlItemPipeline(object):
     def open_spider(self, spider):
         self.engine = db_connect()
         create_bizrate_tables(self.engine)
+        create_expedia_tables(self.engine)
         spider.logger.info('Connected to Sqlite file %s' % self.engine.engine.url.database)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -39,6 +43,10 @@ class SqlItemPipeline(object):
             model = BizrateStore(**item)
         elif isinstance(item, BizrateReviewItem):
             model = BizrateReview(**item)
+        elif isinstance(item, ExpediaHotelItem):
+            model = ExpediaHotel(**item)
+        elif isinstance(item, ExpediaReviewItem):
+            model = ExpediaReview(**item)
         else:
             model = None
         try:

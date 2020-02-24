@@ -1,40 +1,10 @@
-from sqlalchemy import create_engine, Table, Column
+from sqlalchemy import Table, Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Integer, BigInteger, Boolean, Float, String, Text, Date, DateTime
-# from .settings import DB_CONN_STR
 
-
-DB_CONN_STR = '{driver}:///{name}'.format(driver='sqlite', name='C:\\Users\\lkhoho\\OneDrive\\consumer_reviews.db')
 
 # base class for all database tables
 DeclarativeBase = declarative_base()
-
-
-def db_connect():
-    """
-    Connect to database using settings from settings.py.
-
-    :return: Sqlalchemy engine instance.
-    """
-
-    return create_engine(DB_CONN_STR)
-
-
-def create_all_tables(engine):
-    """
-    Take metadata and create database tables.
-    """
-
-    DeclarativeBase.metadata.create_all(engine)
-
-
-def create_bizrate_tables(engine):
-    """
-    Create Bizrate-related tables.
-    """
-
-    BizrateStore.metadata.create_all(engine)
-    BizrateReview.metadata.create_all(engine)
 
 
 class BizrateStore(DeclarativeBase):
