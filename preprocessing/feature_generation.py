@@ -1,4 +1,5 @@
 import os
+import csv
 import logging
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -37,6 +38,8 @@ def compute_TFIDF(upstream_task: str,
     filename = filename[:pos] + '__tfidf.csv'
     save_path = os.sep.join([working_dir, context['ds_nodash']])
     os.makedirs(save_path, exist_ok=True)
-    df_result.to_csv(save_path + os.sep + filename, index=include_index)
+    df_result.to_csv(save_path + os.sep + filename, index=include_index, 
+                     quoting=csv.QUOTE_NONNUMERIC, 
+                     chunksize=10000)
 
     return filename

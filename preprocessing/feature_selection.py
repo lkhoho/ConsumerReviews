@@ -30,7 +30,11 @@ class FeatureRankingMode(IntEnum):
     CHI_SQUARE = 2
 
 
-def feature_ranking(upstream_task: str, mode: FeatureRankingMode, text_field: str, label_field: str, **context):
+def feature_ranking(upstream_task: str, 
+                    mode: FeatureRankingMode, 
+                    text_field: str, 
+                    label_field: str, 
+                    **context):
     """
     Rank features by given mode, and save the features in descending order.
     :param upstream_task: Upstream task ID. If this is the first task in workflow, pass in None.
@@ -41,14 +45,14 @@ def feature_ranking(upstream_task: str, mode: FeatureRankingMode, text_field: st
     :return: File name of ranked features with scores, as a dict, in descending order.
     """
 
-    # task_instance = context['ti']
+    task_instance = context['ti']
     working_dir = Variable.get('working_dir')
     os.makedirs(working_dir, exist_ok=True)
-    # logging.info('upstream_task=' + upstream_task)
-    # filename = task_instance.xcom_pull(task_ids=upstream_task)
+    logging.info('upstream_task=' + upstream_task)
+    filename = task_instance.xcom_pull(task_ids=upstream_task)
 
     # filename = 'bellagio__lemvocabulary.csv'
-    filename = 'bellagio__balanced__lemvocabulary__tfidf.csv'
+    # filename = 'bellagio__balanced__lemvocabulary__tfidf.csv'
 
     logging.info('Filename=' + filename)
     df = pd.read_csv(os.sep.join([working_dir, context['ds_nodash'], filename]))

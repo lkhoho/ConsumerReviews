@@ -61,26 +61,26 @@ setup_task = PythonOperator(task_id='setup',
                                 'data_pathname': config['setup']['data_pathname'],
                             })
 
-rebalance_task = PythonOperator(task_id='rebalance',
-                                dag=dag,
-                                provide_context=True,
-                                python_callable=rebalance_reviews,
-                                op_kwargs={
-                                    'upstream_task': 'setup',
-                                    'label_field': config['rebalance']['label_field_name'],
-                                    'mode': RebalanceMode.OVER_SAMPLING,
-                                    'positive_label': config['rebalance']['label_values'][0],
-                                    'negative_label': config['rebalance']['label_values'][1],
-                                    'random_state': config['rebalance']['random_state'],
-                                    'include_index': config['rebalance']['include_index'],
-                                })
+# rebalance_task = PythonOperator(task_id='rebalance',
+#                                 dag=dag,
+#                                 provide_context=True,
+#                                 python_callable=rebalance_reviews,
+#                                 op_kwargs={
+#                                     'upstream_task': 'setup',
+#                                     'label_field': config['rebalance']['label_field_name'],
+#                                     'mode': RebalanceMode.OVER_SAMPLING,
+#                                     'positive_label': config['rebalance']['label_values'][0],
+#                                     'negative_label': config['rebalance']['label_values'][1],
+#                                     'random_state': config['rebalance']['random_state'],
+#                                     'include_index': config['rebalance']['include_index'],
+#                                 })
 
 lemmatize_task = PythonOperator(task_id='lemmatization',
                                 dag=dag,
                                 provide_context=True,
                                 python_callable=lemmatize,
                                 op_kwargs={
-                                    'upstream_task': 'rebalance',
+                                    'upstream_task': 'setup',
                                     'data_pathname': None,
                                     'text_field': config['lemmatization']['text_field_name'],
                                     'stopwords': stopwords_set,
@@ -103,44 +103,44 @@ feature_generation_task = PythonOperator(task_id='feature_generation',
                                          provide_context=True,
                                          python_callable=compute_TFIDF,
                                          op_kwargs={
-                                             'upstream_task': 'lemmatization_as_start',
+                                             'upstream_task': 'lemmatization',
                                              'text_field': config['feature_generation']['text_field_name'],
                                              'label': config['feature_generation']['label_field_name'],
                                              'include_index': config['feature_generation']['include_index'],
                                          })
 
-lemmatize_as_start_task = PythonOperator(task_id='lemmatization_as_start',
-                                         dag=dag,
-                                         provide_context=True,
-                                         python_callable=lemmatize,
-                                         op_kwargs={
-                                             'upstream_task': None,
-                                             'data_pathname': config['rebalance']['data_pathname'],
-                                             'text_field': config['lemmatization']['text_field_name'],
-                                             'stopwords': stopwords_set,
-                                             'config': {
-                                                 'pos_tagger': {
-                                                     'model': PROJ_ROOT + os.sep +
-                                                              config['lemmatization']['pos_tagger']['model'],
-                                                     'jar': PROJ_ROOT + os.sep + config['lemmatization']['pos_tagger']['jar'],
-                                                     'java_options': config['lemmatization']['pos_tagger']['java_options'],
-                                                     'mode': eval(config['lemmatization']['mode']),
-                                                     'pos_mapping': config['lemmatization']['pos_tagger']['pos_mapping'],
-                                                     'invalid_pos': config['lemmatization']['pos_tagger']['invalid_pos']
-                                                 },
-                                             },
-                                             'include_index': config['lemmatization']['include_index'],
-                                         })
+# lemmatize_as_start_task = PythonOperator(task_id='lemmatization_as_start',
+#                                          dag=dag,
+#                                          provide_context=True,
+#                                          python_callable=lemmatize,
+#                                          op_kwargs={
+#                                              'upstream_task': None,
+#                                              'data_pathname': config['rebalance']['data_pathname'],
+#                                              'text_field': config['lemmatization']['text_field_name'],
+#                                              'stopwords': stopwords_set,
+#                                              'config': {
+#                                                  'pos_tagger': {
+#                                                      'model': PROJ_ROOT + os.sep +
+#                                                               config['lemmatization']['pos_tagger']['model'],
+#                                                      'jar': PROJ_ROOT + os.sep + config['lemmatization']['pos_tagger']['jar'],
+#                                                      'java_options': config['lemmatization']['pos_tagger']['java_options'],
+#                                                      'mode': eval(config['lemmatization']['mode']),
+#                                                      'pos_mapping': config['lemmatization']['pos_tagger']['pos_mapping'],
+#                                                      'invalid_pos': config['lemmatization']['pos_tagger']['invalid_pos']
+#                                                  },
+#                                              },
+#                                              'include_index': config['lemmatization']['include_index'],
+#                                          })
 
 feature_ranking_task = PythonOperator(task_id='feature_ranking',
                                       dag=dag,
                                       provide_context=True,
                                       python_callable=feature_ranking,
                                       op_kwargs={
-                                          'upstream_task': 'lemmatization_as_start',
+                                          'upstream_task': 'feature_generation',
                                           'mode': eval(config['feature_ranking']['mode']),
                                           'text_field': config['feature_ranking']['text_field'],
                                           'label_field': config['feature_ranking']['label_field']
                                       })
 
-dag_start_task >> setup_task >> rebalance_task >> lemmatize_task >> feature_generation_task >> feature_ranking_task
+dag_start_task >> setup_task >> lemmatize_task >> feature_generation_task >> feature_ranking_task

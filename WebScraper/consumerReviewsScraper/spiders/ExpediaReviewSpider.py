@@ -64,7 +64,7 @@ class ExpediaReviewSpider(Spider):
     # }
 
     def start_requests(self):
-        with open(os.sep.join(['data_sources', 'expedia.com', 'us_hotels.json'])) as fp:
+        with open(os.sep.join(['data_sources', 'expedia.com', 'japan_vacation_hotels.json'])) as fp:
             hotel_data = simplejson.load(fp)
         target_urls = [hotel['url'] for hotel in hotel_data['hotels']]
         self.logger.info('%d target URLs to scrape.' % len(target_urls))
@@ -87,8 +87,8 @@ class ExpediaReviewSpider(Spider):
         hotel_name = response.xpath("//h1[@data-stid='content-hotel-title']/text()").get().strip()
         num_reviews = int(response.xpath("//meta[@itemprop='reviewCount']/@content").get())
         self.logger.info('Parsing hotel={}, hotelID={}, reviewCount={}'.format(hotel_name, hotel_id, num_reviews))
-        hotel_intro = response.xpath("//p[@class='uitk-type-paragraph-300']/text()").get().strip()
-        nearby = response.xpath("//li[@class='locations__list-item']/dl/dt/text()").getall()
+        hotel_intro = response.xpath("//p[@class='uitk-type-paragraph-300 all-b-padding-three']/text()").get().strip()
+        nearby = response.xpath("//li[@class='location-summary__list-item']/dl/dt/text()").getall()
         around = response.xpath("//li[@class='transportation__list-item']/dl/dt/text()").getall()
         yield ExpediaHotelItem(
             hotel_id=hotel_id,

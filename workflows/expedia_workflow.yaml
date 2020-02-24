@@ -2,7 +2,7 @@ common:
   working_dir: /Users/keliu/consumer_reviews_working
 
 setup:
-  data_pathname: '/Users/keliu/OneDrive/Projects/text_reviews/data/jp_reviews_en.csv'
+  data_pathname: '/Users/keliu/OneDrive/Projects/text_reviews/data/expedia_hotel_3_stars.csv'
 
 rebalance:
   label_field_name: posneg
@@ -46,6 +46,6 @@ feature_generation:
   include_index: false
 
 feature_ranking:
-  mode: FeatureRankingMode.CHI_SQUARE
+  mode: FeatureRankingMode.FREQUENCY
   text_field: lemmatized
   label_field: posneg
