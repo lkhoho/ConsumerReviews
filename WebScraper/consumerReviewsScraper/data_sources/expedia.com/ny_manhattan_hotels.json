@@ -1,0 +1,44 @@
+{
+  "hotels": [
+    {
+      "name": "New World Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-New-World-Hotel.h1879750.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1583864696611&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=starRating&star=10&swpToggleOn=true&top_cur=USD&top_dp=40&x_pwa=1"
+    },
+    {
+      "name": "The Carter Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-Hotel-Carter.h1206837.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1583864696614&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=starRating&star=10&swpToggleOn=true&x_pwa=1"
+    },
+    {
+      "name": "Hotel 31",
+      "url": "https://www.expedia.com/New-York-Hotels-Hotel-31.h793793.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&price=75.0%2C125.0&pwaDialog=reviews&pwa_ts=1583870353426&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=price&star=20&swpToggleOn=true&top_cur=USD&top_dp=91&x_pwa=1"
+    },
+    {
+      "name": "The Jane Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-The-Jane-Hotel.h2256179.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&price=75.0%2C125.0&pwaDialog=reviews&pwa_ts=1583870353406&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=price&star=20&swpToggleOn=true&top_cur=USD&top_dp=78&x_pwa=1"
+    },
+    {
+      "name": "Skyline Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-Skyline-Hotel.h9279.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1583869701057&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=price&star=30&swpToggleOn=true&top_cur=USD&top_dp=135&x_pwa=1"
+    },
+    {
+      "name": "The Franklin Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-The-Franklin-Hotel.h25664.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1583869672421&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=price&star=30&swpToggleOn=true&top_cur=USD&top_dp=103&x_pwa=1"
+    },
+    {
+      "name": "The Lucerne Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-The-Lucerne-Hotel.h41203.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&price=125.0%2C200.0&pwaDialog=reviews&pwa_ts=1583869088368&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=price&star=40&swpToggleOn=true&top_cur=USD&top_dp=149&x_pwa=1"
+    },
+    {
+      "name": "The Gotham Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-The-Gotham-Hotel.h4042617.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&price=125.0%2C200.0&pwaDialog=reviews&pwa_ts=1583869088383&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=price&star=40&swpToggleOn=true&top_cur=USD&top_dp=151&x_pwa=1"
+    },
+    {
+      "name": "The Michelangelo Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-The-Michelangelo-Hotel.h22265.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1583867166603&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=recommended&star=50&swpToggleOn=true&top_cur=USD&top_dp=190&x_pwa=1"
+    },
+    {
+      "name": "The Knickerbocker Hotel",
+      "url": "https://www.expedia.com/New-York-Hotels-The-Knickerbocker-Hotel.h9593707.Hotel-Information?chkin=2020-03-10&chkout=2020-03-15&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1583867166598&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&sort=recommended&star=50&swpToggleOn=true&top_cur=USD&top_dp=192&x_pwa=1"
+    }
+  ]
+}
