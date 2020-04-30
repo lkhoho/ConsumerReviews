@@ -1,152 +1,167 @@
 import os
 import re
+import argparse
 import itertools
-import logging
+import enum
 import operator
-import simplejson as json
 import pandas as pd
-from collections import Counter, OrderedDict
-from enum import IntEnum
+import numpy as np
+from typing import List, Dict, Set, Union
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_selection import chi2, SelectKBest
-from airflow.models import Variable
-from preprocessing.lemmatization import LemmatizationMode
 
 
-class FeatureSelectionMode(IntEnum):
+@enum.unique
+class FeatureMode(enum.Enum):
     """
-    Feature selection modes.
-    """
-
-    FREQUENCY = 1
-    CHI_SQUARE = 2
-
-
-class FeatureRankingMode(IntEnum):
-    """
-    Modes of ranking features.
+    Feature modes.
     """
 
-    FREQUENCY = 1
-    CHI_SQUARE = 2
+    FREQ = 1
+    CHI2 = 2
 
 
-def feature_ranking(upstream_task: str, 
-                    mode: FeatureRankingMode, 
-                    text_field: str, 
-                    label_field: str, 
-                    **context):
-    """
-    Rank features by given mode, and save the features in descending order.
-    :param upstream_task: Upstream task ID. If this is the first task in workflow, pass in None.
-    :param mode: Mode of how features are ranked. Supported modes: frequency and chi-square.
-    :param text_field: Name of text column.
-    :param label_field: Name of target variable column.
-    :param context: Jinja template variables in Airflow.
-    :return: File name of ranked features with scores, as a dict, in descending order.
-    """
-
-    task_instance = context['ti']
-    working_dir = Variable.get('working_dir')
-    os.makedirs(working_dir, exist_ok=True)
-    logging.info('upstream_task=' + upstream_task)
-    filename = task_instance.xcom_pull(task_ids=upstream_task)
-
-    # filename = 'bellagio__lemvocabulary.csv'
-    # filename = 'bellagio__balanced__lemvocabulary__tfidf.csv'
-
-    logging.info('Filename=' + filename)
-    df = pd.read_csv(os.sep.join([working_dir, context['ds_nodash'], filename]))
-    logging.info('Dataframe shape={}'.format(df.shape))
-
-    if mode is FeatureRankingMode.FREQUENCY:
-        texts = []
-        for lemmatized in df[text_field]:
-            lemmatized = lemmatized[1:-1].replace('\'', '').split(', ')
-            texts.extend(lemmatized)
-        values = Counter(texts)
-    elif mode is FeatureRankingMode.CHI_SQUARE:
-        chi2_selector = _chi_square_feature_selection(df, label_field, num_features=df.shape[1] + 1)
-        logging.info('chi2_selector={}'.format(chi2_selector))
-        scores = chi2_selector.scores_.tolist()
-        values = {index: score for index, score in enumerate(scores)}
-        values = sorted(values.items(), key=lambda kv: kv[1], reverse=True)
-        values = OrderedDict(values)
-    else:
-        raise ValueError('Unsupported feature ranking mode: {}'.format(mode))
-
-    pos = filename.rfind('.')
-    filename = filename[:pos] + '__rank{}.json'.format(mode.name)
-    save_path = os.sep.join([working_dir, context['ds_nodash']])
-    os.makedirs(save_path, exist_ok=True)
-    with open(save_path + os.sep + filename, 'w') as fp:
-        json.dump(values, fp)
-
-    return filename
+def parse_cli():
+    parser = argparse.ArgumentParser(description='Select partial/all features from TFIDF file. Supports frequency (in descending order) and chi-square modes.')
+    parser.add_argument('working_dir', help='Working directory')
+    parser.add_argument('tfidf_file', help='Path of TFIDF file whose dimension are reduced. Supports CSV file only.')
+    parser.add_argument('mode', type=int, choices=[1, 2], help='Feature-ranking mode. 1 for frequency. 2 for chi-square.')
+    parser.add_argument('-l', '--labels', help='Comma-separated target variables that will be excluded during feature selection.')
+    parser.add_argument('-n', '--num_features', help='Comma-separated # of features to select. All features are selected if omitted.')
+    parser.add_argument('-f', '--tagged_file', help='Path of tagged file for Frequency mode.')
+    parser.add_argument('-t', '--tagged_field', help='Tagged text field name for Frequency mode.')
+    parser.add_argument('-c', '--chi2_label', help='Label used to compute score function for Chi-square mode.')
+    return parser.parse_args()
 
 
-def feature_selection(lem_mode: LemmatizationMode, feature_mode: FeatureSelectionMode, num_features: list,
-                      store: str, working_dir: str, include_index: bool, **context):
-    exec_date = context['execution_date'].strftime('%Y%m%d')
-    working_dir += os.path.sep + exec_date
-    input_files = [xcom['output_files']
-                   for xcom in context['task_instance'].xcom_pull(task_ids=[
-                    'process_all_words__{}_{}'.format(store, str(lem_mode)),
-                    'process_nouns__{}_{}'.format(store, str(lem_mode)),
-                    'transform_objective__{}_{}'.format(store, str(lem_mode))])]
-    input_files = list(itertools.chain(*input_files))
-    logging.info('Input files=' + str(input_files))
-    dir_path = os.path.sep.join([working_dir, 'feature_selection'])
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-    regex = r'.+{}_{}_(?P<label>[A-Z_]+)_(?P<nlp>[a-z]+)_.+\.csv'.format(store, str(lem_mode))
-    output_files = []
-    for file in input_files:
-        label = re.match(regex, file).group('label')
-        nlp = re.match(regex, file).group('nlp')
-        df_for_ranking = pd.read_csv(working_dir + os.path.sep + file[:file.rindex(os.path.sep)] + os.path.sep +
-                                     '_'.join([store, str(lem_mode), label, nlp]) + '_tfidf.csv')
-        df = pd.read_csv(working_dir + os.path.sep + file)
-        if feature_mode is FeatureSelectionMode.FREQUENCY:
-            selected_features = _frequency_feature_selection(df_for_ranking, label)
-            for num in num_features:
-                features = selected_features[:num]
-                features.append(label)
-                result = df[features]
-                filename = file[file.rindex(os.path.sep) + 1:file.rindex('.')] + '_{}_{}.csv'\
-                    .format(str(feature_mode), str(num))
-                output_files.append(filename)
-                result.to_csv(os.path.sep.join([dir_path, filename]), index=include_index)
-        elif feature_mode is FeatureSelectionMode.CHI_SQUARE:
-            for num in num_features:
-                chi2_selector = _chi_square_feature_selection(df_for_ranking, label, num)
-                result = df.iloc[:, chi2_selector.get_support(indices=True)]
-                result.loc[:, label] = df[label]
-                filename = file[file.rindex(os.path.sep) + 1:file.rindex('.')] + '_{}_{}.csv'\
-                    .format(str(feature_mode), str(num))
-                output_files.append(filename)
-                result.to_csv(os.path.sep.join([dir_path, filename]), index=include_index)
-    return {
-        'input_files': input_files,
-        'output_files': [os.path.sep.join(['feature_selection', filename]) for filename in output_files]
-    }
-
-
-def _frequency_feature_selection(data_frame, label) -> list:
-    frequency = {}
-    for feature in data_frame:
-        if feature == label:
-            continue
-        values = data_frame[feature]
-        frequency[feature] = len(data_frame[values > 0.0])
+def _sort_features_by_freq(corpus: pd.Series) -> List[str]:
+    vectorizer = CountVectorizer()
+    X = vectorizer.fit_transform(corpus.values)
+    features = vectorizer.get_feature_names()
+    counts = np.sum(X.toarray(), axis=0, dtype=np.int32)  # sum feature counts by column
+    if len(features) != len(counts):
+        raise AssertionError('Length of features does not equal to length of counts.')
+    frequency = {features[i]: counts[i] for i in range(len(features))}
     return [x[0] for x in sorted(frequency.items(), key=operator.itemgetter(1), reverse=True)]
 
 
-def _chi_square_feature_selection(data_frame, label, num_features):
-    y = data_frame[label]
-    X = data_frame.drop(label, axis=1)
-    if num_features > X.shape[1]:
+def _chi2_feature_selection(df: pd.DataFrame, chi2_label: str, labels: List[str],
+                            num_features: Union[List[int], str]):
+    y = df[chi2_label]
+    columns_to_drop = [chi2_label] + labels
+    X = df.drop(columns=columns_to_drop)
+    if num_features == 'all' or num_features > X.shape[1]:
         num_features = 'all'
-    logging.info('num_features={}'.format(num_features))
+    print('# of features in data frame: {}'.format(num_features))
     chi2_selector = SelectKBest(chi2, k=num_features)
     chi2_selector.fit(X, y)
     return chi2_selector
+
+
+if __name__ == '__main__':
+    args = parse_cli()
+    
+    if args.mode == 1:
+        mode = FeatureMode.FREQ
+        if args.tagged_file is None or args.tagged_field is None:
+            raise ValueError('Tagged file name or tagged field cannot be empty for frequency mode.')
+    elif args.mode == 2:
+        mode = FeatureMode.CHI2
+        if args.chi2_label is None:
+            raise ValueError('Chi2 label cannot be empty for chi-square mode.')
+    else:
+        raise ValueError('Unknown feature ranking mode: {}'.format(args.mode))
+    
+    if args.labels is not None:
+        labels = args.labels.split(',')
+    else:
+        labels = []
+
+    if args.num_features is not None:
+        num_features = [int(x) for x in args.num_features.split(',')]
+    else:
+        num_features = 'all'
+
+    print('Working directory: {}'.format(args.working_dir))
+    print('Data file: {}'.format(args.tfidf_file))
+    print('Select mode: {}'.format(mode.name))
+    print('Tagged field: {}'.format(args.tagged_field))
+    print('Labels: {}'.format(labels))
+    print('# features to select: {}'.format(num_features))
+    if mode is FeatureMode.FREQ:
+        print('Tagged file: {}'.format(args.tagged_file))
+        print('Tagged field: {}'.format(args.tagged_field))
+    if mode is FeatureMode.CHI2:
+        print('Chi2 label: {}'.format(args.chi2_label))
+
+    df = pd.read_csv(os.sep.join([args.working_dir, args.tfidf_file]))
+    print('TFIDF dataframe shape={}'.format(df.shape))
+    if mode is FeatureMode.FREQ:
+        df_tag = pd.read_csv(os.sep.join([args.working_dir, args.tagged_file]))
+        print('Tagged dataframe shape={}'.format(df_tag.shape))
+        selected_features = _sort_features_by_freq(df_tag[args.tagged_field])
+        if num_features == 'all':
+            selected_features.extend(labels)
+            result = df[selected_features]
+            print('Output shape: {}'.format(result.shape))
+            filename = os.path.splitext(args.tfidf_file)[0] + '__{}_all.csv'.format(mode.name)
+            print('Output file: {}'.format(filename))
+            result.to_csv(os.sep.join([args.working_dir, filename]), index=False)
+        else:
+            for num in num_features:
+                features = selected_features[:num]
+                features.extend(labels)
+                result = df[features]
+                print('Output shape: {}'.format(result.shape))
+                filename = os.path.splitext(args.tfidf_file)[0] + '__{}_{}.csv'.format(mode.name, num)
+                print('Output file: {}'.format(filename))
+                result.to_csv(os.sep.join([args.working_dir, filename]), index=False)
+    elif mode is FeatureMode.CHI2:
+        if num_features == 'all':
+            chi2_selector = _chi2_feature_selection(df, args.chi2_label, labels, num_features)
+            result = df.iloc[:, chi2_selector.get_support(indices=True)]
+            for label in labels:
+                result.loc[:, label] = df[label]
+            print('Output shape: {}'.format(result.shape))
+            filename = os.path.splitext(args.tfidf_file)[0] + '__{}_all.csv'.format(mode.name)
+            print('Output file: {}'.format(filename))
+            result.to_csv(os.sep.join([args.working_dir, filename]), index=False)
+        else:
+            for num in num_features:
+                chi2_selector = _chi2_feature_selection(df, args.chi2_label, labels, num)
+                result = df.iloc[:, chi2_selector.get_support(indices=True)]
+                for label in labels:
+                    result.loc[:, label] = df[label]
+                print('Output shape: {}'.format(result.shape))
+                filename = os.path.splitext(args.tfidf_file)[0] + '__{}_{}.csv'.format(mode.name, num)
+                print('Output file: {}'.format(filename))
+                result.to_csv(os.sep.join([args.working_dir, filename]), index=False)
+    else:
+        raise ValueError('Unknown feature ranking mode: {}'.format(args.mode))
+
+
+# def feature_ranking(mode: FeatureMode, tagged_field: str, label_field: str):
+#     if mode is FeatureMode.FREQUENCY:
+#         texts = []
+#         for tagged in df[tagged_field]:
+#             tagged = tagged[1:-1].replace('\'', '').split(', ')
+#             texts.extend(tagged)
+#         values = Counter(texts)
+#     elif mode is FeatureMode.CHI_SQUARE:
+#         chi2_selector = _chi2_feature_selection(df, label_field, num_features=df.shape[1] + 1)
+#         print('chi2_selector={}'.format(chi2_selector))
+#         scores = chi2_selector.scores_.tolist()
+#         values = {index: score for index, score in enumerate(scores)}
+#         values = sorted(values.items(), key=lambda kv: kv[1], reverse=True)
+#         values = OrderedDict(values)
+#     else:
+#         raise ValueError('Unsupported feature ranking mode: {}'.format(mode))
+
+#     pos = filename.rfind('.')
+#     filename = filename[:pos] + '__rank{}.json'.format(mode.name)
+#     save_path = os.sep.join([working_dir, context['ds_nodash']])
+#     os.makedirs(save_path, exist_ok=True)
+#     with open(save_path + os.sep + filename, 'w') as fp:
+#         json.dump(values, fp)
+
+#     return filename

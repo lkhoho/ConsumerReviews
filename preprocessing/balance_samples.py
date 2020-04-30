@@ -1,85 +1,75 @@
 import os
-import logging
+import argparse
 import enum
 import pandas as pd
-from typing import Union
 from sklearn.utils import resample
-from airflow.models import Variable
 
 
-class RebalanceMode(enum.IntEnum):
+@enum.unique
+class RebalanceMode(enum.Enum):
     """
     Sample rebalance modes.
     """
 
-    OVER_SAMPLING = '1'
-    DOWN_SAMPLING = '2'
+    OVER_SAMPLING = 1
+    DOWN_SAMPLING = 2
 
 
-def rebalance_reviews(upstream_task: str, 
-                      label_field: str, 
-                      mode: RebalanceMode, 
-                      positive_label: Union[int, str], 
-                      negative_label: Union[int, str],
-                      random_state=41, 
-                      include_index=False, 
-                      **context):
-    """
-    Perform over-sampling or down-sampling to balance positive and negative reviews.
-    :param upstream_task: Upstream task ID.
-    :param label_field: Column of target variable name.
-    :param mode: Mode of rebalance: over-sampling or down-sampling.
-    :param positive_label: Label for positive samples.
-    :param negative_label: Label for negative samples.
-    :param random_state: Seed of random number. A prime number is preferred. Default is 41.
-    :param include_index: Should include index when saving dataframe.
-    :param context: Jinja template variables in Airflow.
-    :return: Name of data file that has been re-sampled.
-    """
+def parse_cli():
+    parser = argparse.ArgumentParser(description='Rebalance samples. Supports over-sampling and down-sampling.')
+    parser.add_argument('working_dir', help='Working directory')
+    parser.add_argument('data_file', help='Path of sample data to rebalance. Supports CSV file only.')
+    parser.add_argument('mode', type=int, choices=[1, 2],
+                        help='Rebalance mode. 1 for over-sampling. 2 for down-sampling.')
+    parser.add_argument('-l', '--label', type=str, default='posneg', help='Target variable name.')
+    parser.add_argument('-p', '--pos_label', default='pos', help='Value of positive label.')
+    parser.add_argument('-n', '--neg_label', default='neg', help='Value of negative label.')
+    parser.add_argument('-r', '--random_state', type=int, default=41,
+                        help='Seed of random number. A prime number is preferred. Default is 41.')
+    return parser.parse_args()
 
-    working_dir = Variable.get('working_dir')
-    os.makedirs(working_dir, exist_ok = True)
-    logging.info('Working dir=' + working_dir)
-    logging.info('Upstream task=' + upstream_task)
-    logging.info('Target variable=' + label_field)
-    logging.info('Rebalance mode={}'.format(mode))
-    logging.info('Positive lable={}. Negative label={}'.format(positive_label, negative_label))
 
-    # if upstream_task is None:
-    #     logging.info('Data pathname=' + data_pathname)
-    #     df = pd.read_csv(data_pathname)
-    # else:
-    filename = context['ti'].xcom_pull(task_ids=upstream_task)
-    logging.info('Input filename=' + filename)
-    df = pd.read_csv(os.sep.join([working_dir, context['ds_nodash'], filename]))
-
-    value_counts = df[label_field].value_counts(sort=True, ascending=False)
-    logging.info('Counts before re-sampling={}'.format(value_counts))
-    if value_counts[positive_label] >= value_counts[negative_label]:
-        major_label = positive_label
-        minor_label = negative_label
+if __name__ == '__main__':
+    args = parse_cli()
+    if args.mode == 1:
+        mode = RebalanceMode.OVER_SAMPLING
+    elif args.mode == 2:
+        mode = RebalanceMode.DOWN_SAMPLING
     else:
-        major_label = negative_label
-        minor_label = positive_label
-    df_major = df[df[label_field] == major_label]
-    df_minor = df[df[label_field] == minor_label]
+        raise ValueError('Unknown rebalance mode: {}'.format(args.mode))
+
+    print('Working directory: ' + args.working_dir)
+    print('File to rebalance: ' + args.data_file)
+    print('Rebalance mode: {}'.format(mode.name))
+    print('Label: {}'.format(args.label))
+    print('Positive label: {}'.format(args.pos_label))
+    print('Negative label: {}'.format(args.neg_label))
+    print('Random seed: {}\n'.format(args.random_state))
+
+    df = pd.read_csv(os.sep.join([args.working_dir, args.data_file]))
+
+    value_counts = df[args.label].value_counts(sort=True, ascending=False)
+    print('Counts before re-sampling: \n{}\n'.format(value_counts))
+    if value_counts[args.pos_label] >= value_counts[args.neg_label]:
+        major_label = args.pos_label
+        minor_label = args.neg_label
+    else:
+        major_label = args.neg_label
+        minor_label = args.pos_label
+    df_major = df[df[args.label] == major_label]
+    df_minor = df[df[args.label] == minor_label]
 
     if mode is RebalanceMode.DOWN_SAMPLING:
-        df_resampled = resample(df_major, replace=True, n_samples=df_minor.shape[0], random_state=random_state)
+        df_resampled = resample(df_major, replace=True, n_samples=df_minor.shape[0], random_state=args.random_state)
         df_result = pd.concat([df_resampled, df_minor])
     elif mode is RebalanceMode.OVER_SAMPLING:
-        df_resampled = resample(df_minor, replace=True, n_samples=df_major.shape[0], random_state=random_state)
+        df_resampled = resample(df_minor, replace=True, n_samples=df_major.shape[0], random_state=args.random_state)
         df_result = pd.concat([df_resampled, df_major])
     else:
         raise ValueError('Unknown rebalance mode: {}'.format(mode))
-    value_counts = df_result[label_field].value_counts()
-    logging.info('Counts after re-sampling={}'.format(value_counts))
-    pos = data_pathname.rfind('/')
-    filename = data_pathname[pos + 1:]
-    pos = filename.rfind('.')
-    filename = filename[:pos] + '__balanced.csv'
-    save_path = os.sep.join([working_dir, context['ds_nodash']])
-    os.makedirs(save_path, exist_ok=True)
-    df_result.to_csv(save_path + os.sep + filename, index=include_index)
-
-    return filename
+    value_counts = df_result[args.label].value_counts()
+    print('Counts after re-sampling: \n{}\n'.format(value_counts))
+    filename = os.path.splitext(args.data_file)[0] + '__balanced-{}.csv'.format(mode.name)
+    print('Output file: {}'.format(filename))
+    df_result.to_csv(os.sep.join([args.working_dir, filename]), index=False)
+    print('Done!')
