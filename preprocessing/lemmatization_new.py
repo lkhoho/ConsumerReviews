@@ -32,7 +32,7 @@ def parse_cli():
     parser.add_argument('--model', default=os.sep.join(['lib', 'stanford-postagger', 'models', 
                                                         'english-left3words-distsim.tagger']), 
                         help='Path of POS tagger model. Default tagger model will be used if not provided.')
-    parser.add_argument('--jar', default=os.sep.join('lib', 'stanford-postagger', 'stanford-postagger.jar'), 
+    parser.add_argument('--jar', default=os.sep.join(['lib', 'stanford-postagger', 'stanford-postagger.jar']), 
                         help='Path of POS tagger JAR file. Default JAR file will be used if not provided.')
     parser.add_argument('--java_opts', default='-Xms512m -Xmx4g', 
                         help='Java options used by POS tagger. Default options are "-Xms512m -Xmx4g".')
