@@ -24,14 +24,15 @@ def parse_cli():
     parser.add_argument('data_file', help='Path of text data file to lemmatize. Supports CSV file only.')
     parser.add_argument('mode', type=int, choices=[1, 2],
                         help='Lemmatization mode. 1 for by-vocabulary. 2 for by-paragraph.')
-    parser.add_argument('--stopwords', default='resource\\stopwords.txt', 
+    parser.add_argument('--stopwords', default=os.sep.join(['resource', 'stopwords.txt']), 
                         help='Path of stopwords file. One stopword per line. ' \
-                            'Default stopwords file will be used if not provided.')
+                             'Default stopwords file will be used if not provided.')
     parser.add_argument('--text_field', type=str, default='content', 
                         help='Text field name. Default field name "content" will be used if not provided.')
-    parser.add_argument('--model', default='lib\\stanford-postagger\\models\\english-left3words-distsim.tagger', 
+    parser.add_argument('--model', default=os.sep.join(['lib', 'stanford-postagger', 'models', 
+                                                        'english-left3words-distsim.tagger']), 
                         help='Path of POS tagger model. Default tagger model will be used if not provided.')
-    parser.add_argument('--jar', default='lib\\stanford-postagger\\stanford-postagger.jar', 
+    parser.add_argument('--jar', default=os.sep.join('lib', 'stanford-postagger', 'stanford-postagger.jar'), 
                         help='Path of POS tagger JAR file. Default JAR file will be used if not provided.')
     parser.add_argument('--java_opts', default='-Xms512m -Xmx4g', 
                         help='Java options used by POS tagger. Default options are "-Xms512m -Xmx4g".')
