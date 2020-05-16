@@ -1,9 +1,10 @@
 from collections import Counter, defaultdict
 from sklearn.feature_extraction.text import CountVectorizer
-from spacy.tokens.span import Span
+from spacy.tokens import Span
 from textblob import TextBlob
 from typing import List, Set, Tuple, Generator
 import numpy as np
+import os
 import pandas as pd
 import spacy
 
@@ -30,7 +31,11 @@ com_tag = set(['IN', 'PRP', 'PRP$', 'DT', 'HYPH', 'TO', ',', '.', 'CC',
 #                   'amazon', 'everything', 'company', 'brand',
 #                   'buy', 'purchase', 'cost', 'year', 'month', 'day',
 #                   'week', 'hour', 'problem', 'issue', 'give'])
-nonaspects = {'expedia', 'hotel', 'day', 'night', 'york', 'thing'}
+nonaspects = {'expedia', 'hotel', 'day', 'night', 'morning', 'evening', 'one', 
+              'york', 'thing', 'nothing', 'nyc', 'minute', 'second', 'something', 
+              'anything', 'everything', 'someone', 'anyone', 'everyone', 'somebody', 
+              'anybody', 'everybody', 'nobody', 'review', 'year', 'month', 'week', 
+              'hour', 'ny', 'newyork'}
 
 
 class SentCustomProperties(object):
@@ -95,7 +100,7 @@ class ReviewSents(object):
 
         for _, row in self.data.iterrows():
             review_id = row[self.id_field]
-            text = row[self.text_field]
+            text = row[self.text_field].lower()
             rating = row[self.rating_field]
             try:
                 review = parser(text)
@@ -163,7 +168,7 @@ class Unigramer(object):
 
         return ' '.join(wordset)
 
-    def candidate_unigrams(self, corpus: ReviewSents, min_pct=0.01, amod_pct=0.094) -> Set[str]:
+    def candidate_unigrams(self, corpus: ReviewSents, min_pct=0.001, amod_pct=0.09) -> Set[str]:
         '''
         INPUT: ReviewSents, float, float
         OUTPUT: set
@@ -418,7 +423,6 @@ class Trigramer(object):
         Checks the rev_dict, sent_dict, and word_pos_dict of bigrams in trigram
         to build the same dictionaries for the trigram.
         '''
-        bgrm_rdict = self.bigramer.rev_dict
         bgrm_sdict = self.bigramer.sent_dict
         tgrm_sdict = self.sent_dict
         bgrm_wdict = self.bigramer.word_pos_dict
@@ -471,22 +475,3 @@ class Trigramer(object):
                 self._find_idx(corpus, bigram1, bigram2, trigram)
 
         return trigrams
-
-
-if __name__ == "__main__":
-    df = pd.read_csv('/Users/keliu/Downloads/ny_hotel_reviews_1star_en.csv')
-    rs = ReviewSents(df, 'review_id', 'content', 'overall_rating')
-    unigramer = Unigramer()
-    res = unigramer.candidate_unigrams(rs)
-    print('Unigrams: \n---------\n{}\nSize: {}\n'.format(res, len(res)))
-    # uni_freq = {x:unigramer.cnt_dict[x] for x in res}
-    print('Unigrams Freq: \n---------\n{}\nSize: {}\n'.format(unigramer.cnt_dict, len(unigramer.cnt_dict)))
-    
-    bigramer = Bigramer(unigramer)
-    res = bigramer.candidate_bigrams(rs)
-    print('Bigrams: \n---------\n{}\nSize: {}\n'.format(res, len(res)))
-    print('Bigrams PMI: \n---------\n{}\nSize: {}\n'.format(bigramer.pmi, len(bigramer.pmi)))
-
-    trigramer = Trigramer(bigramer)
-    res = trigramer.candidate_trigrams(rs)
-    print('Trigrams: \n---------\n{}\nSize: {}\n'.format(res, len(res)))

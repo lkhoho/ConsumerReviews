@@ -9,7 +9,8 @@ def parse_cli():
     parser = argparse.ArgumentParser(description='Compute TFIDF matrix from text file.')
     parser.add_argument('working_dir', help='Working directory')
     parser.add_argument('data_file', help='Path of text file. Supports CSV file only.')
-    parser.add_argument('token_field', help='Name of tokenized text column.')
+    parser.add_argument('--token_field', type=str, default='lemmatized', 
+                        help='Name of tokenized text column. Default name "lemmatized" will be used if not provided.')
     parser.add_argument('-l', '--label', help='Optional target variable name.')
     return parser.parse_args()
 
