@@ -6,7 +6,7 @@ classes from parsers.py
 
 from afinn import Afinn
 from collections import defaultdict
-from myparser import ReviewSents, Unigramer, Bigramer, Trigramer
+from preprocessing.ngrams import ReviewSents, Unigramer, Bigramer, Trigramer
 from textblob import TextBlob
 from typing import List
 import numpy as np
