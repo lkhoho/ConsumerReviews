@@ -125,7 +125,7 @@ class Unigramer(object):
         '''
         Attribures:
             cnt_dict (dict): {word -> word_freq in all reviews}
-            dep_dict (dict): {word -> list(dependency type that corresponds with the word token)}
+            dep_dict (dict): {word -> list(dependency types that corresponds with the word token)}
             rev_dict (dict): {word -> set(review IDs containg this word)}
             sent_dict (dict): {word -> list(sentence indices containing this word)}
             word_pos_dict (dict): {word -> list(token index of word within spacy sentences)}
@@ -150,10 +150,13 @@ class Unigramer(object):
         '''
 
         wordset = set()
+        acomp_dict = defaultdict(list)
 
         for token in sent.sent:
             self.cnt_dict[token.lemma_] += 1
-            self.dep_dict[token.head.lemma_].append(token.dep_)
+            self.dep_dict[token.head.lemma_].append((token, token.dep_))
+            if token.dep_ == 'acomp':
+                acomp_dict[token.head] = token
             root = parser.vocab[token.lemma].prob
 
             # filter to only consider nouns, valid aspects, and uncommon words
@@ -166,17 +169,20 @@ class Unigramer(object):
                     self.word_pos_dict[token.lemma_].append(i)
                     self.sent_dict[token.lemma_].append(sent.sent_idx)
 
+        for head_word, token in acomp_dict.items():
+            for child in filter(lambda x: x.tag_ in noun_tag, head_word.children):
+                self.dep_dict[child.lemma_].append((token, token.dep_))
+
         return ' '.join(wordset)
 
-    def candidate_unigrams(self, corpus: ReviewSents, min_pct=0.001, amod_pct=0.09) -> Set[str]:
+    def candidate_unigrams(self, corpus: ReviewSents, min_pct=0.001, a_pct=0.09) -> Set[str]:
         '''
         INPUT: ReviewSents, float, float
         OUTPUT: set
 
         Args:
             min_pct: percentage of sentences unigram must appear in
-            amod_pct: minimum percentage where word element has a corresponding
-                      'amod' dependency
+            a_pct: minimum percentage where word element has a corresponding 'amod' or 'acomp' dependency
 
         Obtains a set of candidate unigrams.
         Each candidate unigram must be a noun.
@@ -199,9 +205,10 @@ class Unigramer(object):
 
         # filter for percentage of time aspect is modified by amod
         for word in unigrams.copy():
-            arr = np.array(self.dep_dict[word]) == 'amod'
+            arr = np.array([x[1] for x in self.dep_dict[word]])
+            arr = ((arr == 'amod') | (arr == 'acomp'))
 
-            if np.mean(arr) < amod_pct:
+            if np.mean(arr) < a_pct:
                 unigrams.remove(word)
 
         self.unigrams = unigrams

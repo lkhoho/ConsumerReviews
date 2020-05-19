@@ -4,6 +4,7 @@ from spacy.lang.en import English
 import argparse
 import numpy as np
 import os
+import re
 import pandas as pd
 import spacy
 
@@ -34,17 +35,36 @@ def _compute_scores(row, id_field: str, text_field: str, nlp: English, result: p
     text = row[text_field]
     doc = nlp(text)
     dep_dict = defaultdict(list)  # dependency dict
+    acomp_dict = defaultdict(list)  # acomp dict
 
     for token in doc:
-        dep_dict[token.head].append((token.lemma_, token.tag_, token.dep_))
+        dep_dict[token.head].append((token.lemma_, token.tag_, token.dep_, token.head.head))
+        if token.dep_ == 'acomp':
+            acomp_dict[token.head] = token
+    
+    for head_word, token in acomp_dict.items():
+        for child in filter(lambda x: x.tag_ in noun_tags and x.lemma_ in result.columns, head_word.children):
+                dep_dict[child].append((token.lemma_, token.tag_, token.dep_, token.head.head))
+
     for token, token_tuple in dep_dict.items():
         if token.tag_ in noun_tags and token.lemma_ in result.columns:
             adj_scores = []
+            is_negated = False
             for t in token_tuple:
-                if t[2] == 'amod' and t[1] == 'JJ':
+                if t[1] == 'JJ' and (t[2] == 'amod' or t[2] == 'acomp'):
                     synsets = list(swn.senti_synsets(t[0]))
                     if len(synsets) > 0:
-                        synset = synsets[0]  # use the first synset to get scores
+                        # synset = synsets[0]  # use the first synset to get scores
+                        for syn in synsets:
+                            arr = re.split('[.:]', str(syn))
+                            if arr[1] == 'a' and arr[2] == '01':
+                                synset = syn
+                                break
+                            elif arr[1] == 's' and arr[2] == '01':
+                                synset = syn
+                                break
+                            else:
+                                synset = synsets[0]
                     else:
                         no_score_adjs.append(t)
                         continue
@@ -56,7 +76,13 @@ def _compute_scores(row, id_field: str, text_field: str, nlp: English, result: p
                         score = neg_score * -1.0
                     else:
                         score = 0.0
-                    adj_scores.append(score)
+                    
+                    # find all negation words for current adjectives
+                    for child in t[3].children:
+                        if child.dep_ == 'neg':
+                            is_negated = not is_negated
+                    
+                    adj_scores.append(score * -1.0 if is_negated else score)
             noun_score = sum(adj_scores)  # noun score is the summation of all related adjective scores
             result.at[row_id, token.lemma_] = noun_score  # fill in noun score into right cell in data frame
 
