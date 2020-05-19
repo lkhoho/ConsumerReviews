@@ -9,8 +9,8 @@ ipython
 jupyter
 Scrapy
 fake_useragent
-pyyaml
 simplejson
 sqlalchemy
 emoji
-apache_airflow
+textblob
+spacy
