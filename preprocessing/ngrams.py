@@ -26,17 +26,6 @@ com_tag = set(['IN', 'PRP', 'PRP$', 'DT', 'HYPH', 'TO', ',', '.', 'CC',
                ':', 'WP', 'POS', '``', "''", 'SYM', 'EX', 'PDT', 'UH',
                'NFP', 'XX'])
 
-# stopword aspects to filter out
-# nonaspects = set(['product', 'price', 'device', 'review', 'item',
-#                   'amazon', 'everything', 'company', 'brand',
-#                   'buy', 'purchase', 'cost', 'year', 'month', 'day',
-#                   'week', 'hour', 'problem', 'issue', 'give'])
-nonaspects = {'expedia', 'hotel', 'day', 'night', 'morning', 'evening', 'one', 
-              'york', 'thing', 'nothing', 'nyc', 'minute', 'second', 'something', 
-              'anything', 'everything', 'someone', 'anyone', 'everyone', 'somebody', 
-              'anybody', 'everybody', 'nobody', 'review', 'year', 'month', 'week', 
-              'hour', 'ny', 'newyork'}
-
 
 class SentCustomProperties(object):
     '''
@@ -131,6 +120,7 @@ class Unigramer(object):
             word_pos_dict (dict): {word -> list(token index of word within spacy sentences)}
             unigrams (set): set of unigrams obtained with candidate_unigrams function
             n_reviews (int): total number of reviews
+            non_aspects (set): a set of words considered as non-aspects
         '''
         self.cnt_dict = defaultdict(int)
         self.dep_dict = defaultdict(list)
@@ -139,6 +129,11 @@ class Unigramer(object):
         self.word_pos_dict = defaultdict(list)
         self.unigrams = None
         self.n_reviews = None
+        self.non_aspects = set()
+
+        with open(os.sep.join(['resource', 'nonaspects.txt'])) as fp:
+            for line in fp:
+                self.non_aspects.add(line.strip())
 
     def _iter_nouns(self, sent: SentCustomProperties):
         '''
@@ -160,7 +155,7 @@ class Unigramer(object):
             root = parser.vocab[token.lemma].prob
 
             # filter to only consider nouns, valid aspects, and uncommon words
-            if token.tag_ in noun_tag and (root < -7.5 and token.lemma_ not in nonaspects):
+            if token.tag_ in noun_tag and (root < -7.5 and token.lemma_ not in self.non_aspects):
                 wordset.add(token.lemma_)
                 self.rev_dict[token.lemma_].add(sent.review_id)
 
