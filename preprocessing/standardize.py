@@ -18,7 +18,7 @@ def parse_cli():
 
 def standardize_text(df: pd.DataFrame, text_field: str, output_field: str) -> pd.DataFrame:
     """
-    Remove irrelevant characters, URLs and convert all characters to lowercase for texts in dataframe.
+    Convert all characters to lowercased and remove irrelevant characters, URLs in dataframe.
     :param df: Dataframe that contains texts to be cleaned.
     :param text_field: Name of field that contains texts.
     :param output_field: Name of output text field.
@@ -29,7 +29,9 @@ def standardize_text(df: pd.DataFrame, text_field: str, output_field: str) -> pd
     #     lambda column: emoji.get_emoji_regexp().sub(u'', column)
     # )
 
-    df[output_field] = df[text_field].str.replace("'m", ' am')
+    df[output_field] = df[text_field].str.lower()
+
+    df[output_field] = df[output_field].str.replace("'m", ' am')
     df[output_field] = df[output_field].str.replace("’m", ' am')
     df[output_field] = df[output_field].str.replace("´m", ' am')
 
@@ -63,7 +65,7 @@ def standardize_text(df: pd.DataFrame, text_field: str, output_field: str) -> pd
     df[output_field] = df[output_field].str.replace(r'http', '')
     df[output_field] = df[output_field].str.replace(r'@\S+', '')
     df[output_field] = df[output_field].str.replace(r'@', 'at')
-    df[output_field] = df[output_field].str.lower()
+    
     df[output_field] = df[output_field].astype(str)
 
     return df
