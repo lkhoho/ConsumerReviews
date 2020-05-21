@@ -47,10 +47,10 @@ if __name__ == '__main__':
     uni = Unigramer()
     res = uni.candidate_unigrams(rs, min_pct=args.min_pct, a_pct=args.a_pct)
     print('Unigrams: \n---------\n{}\nSize: {}\n'.format(res, len(res)))
-    # uni_freq = {x:uni.cnt_dict[x] for x in res}
-    print('Unigrams Freq: \n---------\n{}\nSize: {}\n'.format(uni.cnt_dict, len(uni.cnt_dict)))
+    # uni_freq = {x:uni.aspect_dict[x] for x in res}
+    print('Unigrams Freq: \n---------\n{}\nSize: {}\n'.format(uni.aspect_dict, len(uni.aspect_dict)))
     
-    words_and_freq = [(x.strip(), uni.cnt_dict[x]) for x in res]
+    words_and_freq = [(x.strip(), uni.aspect_dict[x]) for x in res]
     words_and_freq = sorted(words_and_freq, key=lambda x: x[1], reverse=True)
     print('There are {} words in unigram.'.format(len(words_and_freq)))
 

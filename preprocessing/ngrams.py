@@ -114,6 +114,7 @@ class Unigramer(object):
         '''
         Attribures:
             cnt_dict (dict): {word -> word_freq in all reviews}
+            aspect_dict (dict): {aspect -> aspect_freq in all reviews}
             dep_dict (dict): {word -> list(dependency types that corresponds with the word token)}
             rev_dict (dict): {word -> set(review IDs containg this word)}
             sent_dict (dict): {word -> list(sentence indices containing this word)}
@@ -123,6 +124,7 @@ class Unigramer(object):
             non_aspects (set): a set of words considered as non-aspects
         '''
         self.cnt_dict = defaultdict(int)
+        self.aspect_dict = defaultdict(int)
         self.dep_dict = defaultdict(list)
         self.rev_dict = defaultdict(set)
         self.sent_dict = defaultdict(list)
@@ -157,6 +159,7 @@ class Unigramer(object):
             # filter to only consider nouns, valid aspects, and uncommon words
             if token.tag_ in noun_tag and (root < -7.5 and token.lemma_ not in self.non_aspects):
                 wordset.add(token.lemma_)
+                self.aspect_dict[token.lemma_] += 1  # treat nouns as aspects
                 self.rev_dict[token.lemma_].add(sent.review_id)
 
                 if sent.sent_idx not in self.sent_dict[token.lemma_]:
@@ -189,7 +192,7 @@ class Unigramer(object):
         for sent in corpus.sentences:
             count_X.append(self._iter_nouns(sent))
 
-        cnt_vec = CountVectorizer()
+        cnt_vec = CountVectorizer(token_pattern='(?u)\b[a-zA-Z0-9_.-]{2,}\b')
         freq = cnt_vec.fit_transform(count_X)
 
         total_count = freq.toarray().sum(axis=0)
