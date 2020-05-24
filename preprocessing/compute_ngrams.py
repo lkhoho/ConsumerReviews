@@ -46,17 +46,14 @@ if __name__ == '__main__':
     rs = ReviewSents(data=df, id_field=args.id_field, text_field=args.text_field, rating_field=args.rating_field)
     uni = Unigramer()
     res = uni.candidate_unigrams(rs, min_pct=args.min_pct, a_pct=args.a_pct)
-    print('Unigrams: \n---------\n{}\nSize: {}\n'.format(res, len(res)))
-    # uni_freq = {x:uni.aspect_dict[x] for x in res}
-    print('Unigrams Freq: \n---------\n{}\nSize: {}\n'.format(uni.aspect_dict, len(uni.aspect_dict)))
+    print('Size of unigrams: {}'.format(len(uni.cnt_dict)))
     
-    words_and_freq = [(x.strip(), uni.aspect_dict[x]) for x in res]
-    words_and_freq = sorted(words_and_freq, key=lambda x: x[1], reverse=True)
-    print('There are {} words in unigram.'.format(len(words_and_freq)))
+    words = [x.strip() for x in res]
+    print('There are {} aspects in unigram.'.format(len(words)))
 
     filename = os.path.splitext(args.data_file)[0] + '__uni.txt'
     with open(os.sep.join([args.working_dir, filename]), 'w') as fp:
-        for line in words_and_freq:
-            fp.write('{}: {}'.format(line[0], line[1]))
+        for word in words:
+            fp.write(word)
             fp.write('\n')
     print('Done!')

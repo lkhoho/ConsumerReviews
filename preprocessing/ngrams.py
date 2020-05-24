@@ -192,7 +192,7 @@ class Unigramer(object):
         for sent in corpus.sentences:
             count_X.append(self._iter_nouns(sent))
 
-        cnt_vec = CountVectorizer(token_pattern='(?u)\b[a-zA-Z0-9_.-]{2,}\b')
+        cnt_vec = CountVectorizer()
         freq = cnt_vec.fit_transform(count_X)
 
         total_count = freq.toarray().sum(axis=0)

@@ -1,4 +1,5 @@
 import argparse
+import emoji
 import os
 import pandas as pd
 
@@ -25,11 +26,11 @@ def standardize_text(df: pd.DataFrame, text_field: str, output_field: str) -> pd
     :return: A pandas dataframe with cleaned texts in either new column of replacing original texts.
     """
 
-    # df[output_field] = df[text_field].apply(
-    #     lambda column: emoji.get_emoji_regexp().sub(u'', column)
-    # )
+    df[output_field] = df[text_field].apply(
+        lambda column: emoji.get_emoji_regexp().sub(u'', column)
+    )
 
-    df[output_field] = df[text_field].str.lower()
+    df[output_field] = df[output_field].str.lower()
 
     df[output_field] = df[output_field].str.replace("'m", ' am')
     df[output_field] = df[output_field].str.replace("’m", ' am')
@@ -56,7 +57,7 @@ def standardize_text(df: pd.DataFrame, text_field: str, output_field: str) -> pd
     df[output_field] = df[output_field].str.replace("´s", ' is')
 
     df[output_field] = df[output_field].str.replace('/', ' ')
-    df[output_field] = df[output_field].str.replace('\.{2,}', '.')
+    df[output_field] = df[output_field].str.replace('\.{2,}', '. ')
     df[output_field] = df[output_field].str.replace('!{2,}', '!')
     df[output_field] = df[output_field].str.replace('\?{2,}', '?')
     df[output_field] = df[output_field].str.replace('€+', '')
