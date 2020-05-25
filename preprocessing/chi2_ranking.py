@@ -27,8 +27,8 @@ if __name__ == '__main__':
     x = df.drop(columns=[args.label_field])
     selector = SelectKBest(score_func=chi2, k='all')  # select all features
     selector.fit(x, y)
-    features = selector.get_support()
-    scores = selector.scores_
+    features = x.columns.values[selector.get_support()]
+    scores = selector.scores_[selector.get_support()]
     assert len(features) == len(scores), \
            'Length of features ({}) does not equal to length of scores ({}).'.format(len(features), len(scores))
     scores = {features[i]: scores[i] for i in range(len(features))}
