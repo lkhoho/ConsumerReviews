@@ -23,8 +23,8 @@ def parse_cli():
     parser.add_argument('aspect_file', help='Name of extracted aspects data file.')
     parser.add_argument('--id_field', type=str, default='review_id', 
                         help='ID field name in data file. Default field name "review_id" will be used if not provided.')
-    parser.add_argument('--text_field', type=str, default='content', 
-                        help='Text field name in data file. Default field name "content" will be used if not provided.')
+    parser.add_argument('--text_field', type=str, default='standardized', 
+                        help='Text field name in data file. Default field name "standardized" will be used if not provided.')
     parser.add_argument('--model', type=str, default='en_core_web_sm', 
                         help='Spacy language model. Default model "en_core_web_sm" will be used if not provided.')
     return parser.parse_args()

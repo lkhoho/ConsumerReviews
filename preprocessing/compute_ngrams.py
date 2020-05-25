@@ -13,8 +13,8 @@ def parse_cli():
                         '2 for bigrame. 3 for trigram. Example: 1,2 for both unigram and bigram.')
     parser.add_argument('--id_field', type=str, default='review_id', 
                         help='ID field name. Default "review_id" will be used if not provided.')
-    parser.add_argument('--text_field', type=str, default='content', 
-                        help='Text field name. Default field name "content" will be used if not provided.')
+    parser.add_argument('--text_field', type=str, default='standardized', 
+                        help='Text field name. Default field name "standardized" will be used if not provided.')
     parser.add_argument('--rating_field', type=str, default='overall_rating', 
                         help='Rating field name. Default field name "overall_rating" will be used if not provided.')
     parser.add_argument('--model', type=str, default='en_core_web_sm', 
@@ -52,6 +52,8 @@ if __name__ == '__main__':
     print('There are {} aspects in unigram.'.format(len(words)))
 
     filename = os.path.splitext(args.data_file)[0] + '__uni.txt'
+    print('Output file: {}'.format(filename))
+
     with open(os.sep.join([args.working_dir, filename]), 'w') as fp:
         for word in words:
             fp.write(word)
