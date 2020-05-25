@@ -49,16 +49,10 @@ if __name__ == '__main__':
         assert num_pos_napp + num_neg_napp == len(idx_napp), 'not_appear_pos + not_appear_neg != num_not_appear'
 
         # gini index of appeared case
-        if num_pos_app == 0 or num_neg_app == 0:
-            gini_app = 1.0
-        else:
-            gini_app = (num_pos_app / len(idx_app))**2 + (num_neg_app / len(idx_app))**2
+        gini_app = (num_pos_app / len(idx_app))**2 + (num_neg_app / len(idx_app))**2
         
         # gini index of not appeared case
-        if num_pos_napp == 0 or num_neg_napp == 0:
-            gini_napp = 1.0
-        else:
-            gini_napp = (num_pos_napp / len(idx_napp))**2 + (num_neg_napp / len(idx_napp))**2
+        gini_napp = (num_pos_napp / len(idx_napp))**2 + (num_neg_napp / len(idx_napp))**2
     
         posneg_app = 1 if num_pos_app > num_neg_app else (0 if num_neg_app > num_pos_app else 2)
         posneg_napp = 1 if num_pos_napp > num_neg_napp else (0 if num_neg_napp > num_pos_napp else 2)
