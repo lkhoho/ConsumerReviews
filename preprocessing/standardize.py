@@ -56,10 +56,16 @@ def standardize_text(df: pd.DataFrame, text_field: str, output_field: str) -> pd
     df[output_field] = df[output_field].str.replace("’", ' is')
     df[output_field] = df[output_field].str.replace("´s", ' is')
 
+    df[output_field] = df[output_field].str.replace('air conditioner', 'ac')
+    df[output_field] = df[output_field].str.replace('air conditioning', 'ac')
+    df[output_field] = df[output_field].str.replace('a.c', 'ac')
+    df[output_field] = df[output_field].str.replace('television', 'tv')
+    df[output_field] = df[output_field].str.replace('t.v', 'tv')
+
     df[output_field] = df[output_field].str.replace('/', ' ')
-    df[output_field] = df[output_field].str.replace('\.{2,}', '. ')
-    df[output_field] = df[output_field].str.replace('!{2,}', '!')
-    df[output_field] = df[output_field].str.replace('\?{2,}', '?')
+    df[output_field] = df[output_field].str.replace('\.{1,}', '. ')
+    df[output_field] = df[output_field].str.replace('!{1,}', '! ')
+    df[output_field] = df[output_field].str.replace('\?{1,}', '? ')
     df[output_field] = df[output_field].str.replace('€+', '')
     df[output_field] = df[output_field].str.replace('[0-9$&~\\()[\]{}<>%\'"“”‘’，;…+\-_=*]+', '')
     df[output_field] = df[output_field].str.replace(r'http\S+', '')
@@ -90,3 +96,4 @@ if __name__ == '__main__':
     print('Output file: {}'.format(filename))
     df.to_csv(os.sep.join([args.working_dir, filename]), index=False)
     print('Done!')
+
