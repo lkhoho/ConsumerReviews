@@ -29,7 +29,7 @@ if __name__ == '__main__':
     x = vec.fit_transform(corpus.values)
     features = vec.get_feature_names()
     counts = np.sum(x.toarray(), axis=0, dtype=np.int32)  # sum features counts by column
-    assert len(features) != len(counts), \
+    assert len(features) == len(counts), \
            'Length of features ({}) does not equal to length of counts ({}).'.format(len(features), len(counts))
 
     frequency = {features[i]: counts[i] for i in range(len(features))}
