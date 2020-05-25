@@ -58,9 +58,7 @@ def standardize_text(df: pd.DataFrame, text_field: str, output_field: str) -> pd
 
     df[output_field] = df[output_field].str.replace('air conditioner', 'ac')
     df[output_field] = df[output_field].str.replace('air conditioning', 'ac')
-    df[output_field] = df[output_field].str.replace('a.c', 'ac')
     df[output_field] = df[output_field].str.replace('television', 'tv')
-    df[output_field] = df[output_field].str.replace('t.v', 'tv')
 
     df[output_field] = df[output_field].str.replace('/', ' ')
     df[output_field] = df[output_field].str.replace('\.{1,}', '. ')
