@@ -8,7 +8,7 @@ def parse_cli():
     parser = argparse.ArgumentParser(description='Compute GINI index.')
     parser.add_argument('working_dir', help='Working directory.')
     parser.add_argument('data_file', help='Name of input tfidf file to calculate gini.')
-    parser.add_argument('label', help='Optional label field name.')
+    parser.add_argument('label', help='Label field name.')
     return parser.parse_args()
 
 
