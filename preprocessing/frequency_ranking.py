@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     corpus = df[args.text_field]
     vec = CountVectorizer()
-    x = vec.fit_transform(corpus.values)
+    x = vec.fit_transform(corpus.to_list())
     features = vec.get_feature_names()
     counts = np.sum(x.toarray(), axis=0, dtype=np.int32)  # sum features counts by column
     assert len(features) == len(counts), \
