@@ -8,8 +8,8 @@ def parse_cli():
     parser = argparse.ArgumentParser(description='Lemmatize texts using Spacy.')
     parser.add_argument('working_dir', help='Working directory')
     parser.add_argument('data_file', help='Path of text data file to lemmatize. Supports CSV file only.')
-    parser.add_argument('--text_field', type=str, default='content', 
-                        help='Text field name. Default field name "content" will be used if not provided.')
+    parser.add_argument('--text_field', type=str, default='standardized', 
+                        help='Text field name. Default field name "standardized" will be used if not provided.')
     parser.add_argument('--model', type=str, default='en_core_web_sm', 
                         help='Spacy language model. Default model "en_core_web_sm" will be used if not provided.')
     parser.add_argument('--exclude_file', default=os.sep.join(['resource', 'nonaspects.txt']), 
