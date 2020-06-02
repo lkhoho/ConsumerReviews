@@ -24,7 +24,7 @@ def parse_cli():
     parser.add_argument('data_file', help='Path of text data file to lemmatize. Supports CSV file only.')
     parser.add_argument('mode', type=int, choices=[1, 2],
                         help='Lemmatization mode. 1 for by-vocabulary. 2 for by-paragraph.')
-    parser.add_argument('--stopwords', default=os.sep.join(['resource', 'stopwords.txt']), 
+    parser.add_argument('--stopwords', default=os.sep.join(['resources', 'stopwords.txt']), 
                         help='Path of stopwords file. One stopword per line. ' \
                              'Default stopwords file will be used if not provided.')
     parser.add_argument('--text_field', type=str, default='content', 

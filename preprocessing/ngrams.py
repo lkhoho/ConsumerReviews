@@ -133,7 +133,7 @@ class Unigramer(object):
         self.n_reviews = None
         self.non_aspects = set()
 
-        with open(os.sep.join(['resource', 'nonaspects.txt'])) as fp:
+        with open(os.sep.join(['resources', 'nonaspects.txt'])) as fp:
             for line in fp:
                 self.non_aspects.add(line.strip())
 

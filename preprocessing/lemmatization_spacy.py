@@ -12,7 +12,7 @@ def parse_cli():
                         help='Text field name. Default field name "standardized" will be used if not provided.')
     parser.add_argument('--model', type=str, default='en_core_web_sm', 
                         help='Spacy language model. Default model "en_core_web_sm" will be used if not provided.')
-    parser.add_argument('--exclude_file', default=os.sep.join(['resource', 'nonaspects.txt']), 
+    parser.add_argument('--exclude_file', default=os.sep.join(['resources', 'nonaspects.txt']), 
                         help='Path to text file containing words that will be removed. One word per line.')
     return parser.parse_args()
 
