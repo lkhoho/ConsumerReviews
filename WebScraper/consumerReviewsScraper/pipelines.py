@@ -39,18 +39,38 @@ class SqlItemPipeline(object):
         spider.logger.info('Disconnected to Sqlite file %s ' % self.engine.engine.url.database)
 
     def process_item(self, item, spider):
-        if isinstance(item, BizrateStoreItem):
-            model = BizrateStore(**item)
-        elif isinstance(item, BizrateReviewItem):
-            model = BizrateReview(**item)
-        elif isinstance(item, ExpediaHotelItem):
-            model = ExpediaHotel(**item)
-        elif isinstance(item, ExpediaReviewItem):
-            model = ExpediaReview(**item)
-        else:
-            model = None
         try:
-            self.session.add(model)
+            if isinstance(item, BizrateStoreItem):
+                model = BizrateStore(**item)
+                result = self.session.query(BizrateStore)
+                                     .filter(BizrateStore.store_id == item['store_id'])
+                                     .one_or_none()
+                if result is None:
+                    self.session.add(model)
+            elif isinstance(item, BizrateReviewItem):
+                model = BizrateReview(**item)
+                result = self.session.query(BizrateReview)
+                                     .filter(BizrateReview.review_id == item['review_id'])
+                                     .one_or_none()
+                if result is None:
+                    self.session.add(model)
+            elif isinstance(item, ExpediaHotelItem):
+                model = ExpediaHotel(**item)
+                result = self.session.query(ExpediaHotel)
+                                     .filter(ExpediaHotel.hotel_id == item['hotel_id'])
+                                     .one_or_none()
+                if result is None:
+                    self.session.add(model)
+            elif isinstance(item, ExpediaReviewItem):
+                model = ExpediaReview(**item)
+                result = self.session.query(ExpediaReview)
+                                     .filter(ExpediaReview.review_id == item['review_id'])
+                                     .one_or_none()
+                if result is None:
+                    self.session.add(model)
+            else:
+                model = None
+
             self.session.commit()
         except SQLAlchemyError as err:
             self.session.rollback()
