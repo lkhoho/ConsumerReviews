@@ -1,8 +1,7 @@
 from collections import Counter, defaultdict
 from sklearn.feature_extraction.text import CountVectorizer
 from spacy.tokens import Span
-from textblob import TextBlob
-from typing import List, Set, Tuple, Generator
+from typing import List, Set, Tuple
 import numpy as np
 import os
 import pandas as pd
@@ -13,27 +12,27 @@ import spacy
 parser = spacy.load('en_core_web_sm')
 
 # list of POS tag belonging to nouns
-noun_tag = set(['NN', 'NNP', 'NNS'])
+noun_tag = {'NN', 'NNP', 'NNS'}
 
 # list of dependencies not likely to be words found in features
-com_dep = set(['det', 'aux', 'cc', 'punct', 'mark', '', 'neg', 'nummod',
-               'prt', 'auxpass', 'case', 'expl', 'preconj', 'intj',
-               'predet', 'meta', 'quantmod', 'agent'])
+com_dep = {'det', 'aux', 'cc', 'punct', 'mark', '', 'neg', 'nummod',
+           'prt', 'auxpass', 'case', 'expl', 'preconj', 'intj',
+           'predet', 'meta', 'quantmod', 'agent'}
 
 # list of POS tags not likely to be words found in features
-com_tag = set(['IN', 'PRP', 'PRP$', 'DT', 'HYPH', 'TO', ',', '.', 'CC',
-               'SP', 'CD', 'MD', 'WDT', 'RP', 'WRB', '-LRB-', '-RRB-',
-               ':', 'WP', 'POS', '``', "''", 'SYM', 'EX', 'PDT', 'UH',
-               'NFP', 'XX'])
+com_tag = {'IN', 'PRP', 'PRP$', 'DT', 'HYPH', 'TO', ',', '.', 'CC',
+           'SP', 'CD', 'MD', 'WDT', 'RP', 'WRB', '-LRB-', '-RRB-',
+           ':', 'WP', 'POS', '``', "''", 'SYM', 'EX', 'PDT', 'UH',
+           'NFP', 'XX'}
 
 
 class SentCustomProperties(object):
-    '''
+    """
     Adds properties to spacy sentences
-    '''
+    """
 
     def __init__(self, review_id: int, rating: float, sent_idx: int, sent: Span):
-        '''
+        """
         INPUT: int, int, int, spacy sentence (spacy.tokens.span.Span)
         OUTPUT: None
 
@@ -44,7 +43,7 @@ class SentCustomProperties(object):
             sent_idx (int): index of sentence within review corpus
             start_idx (int): index of first token in sentence within review
             n_words (int): num of words in sentences
-        '''
+        """
         self.review_id = review_id
         self.review_rating = rating
         self.sent = sent
@@ -54,13 +53,13 @@ class SentCustomProperties(object):
 
 
 class ReviewSents(object):
-    '''
+    """
     Takes a list of unicode reviews and stores the sentences
     (with additional properties) in the returned object
-    '''
+    """
 
     def __init__(self, data: pd.DataFrame, id_field: str, text_field: str, rating_field: str):
-        '''
+        """
         INPUT: pd.DataFrame, str, str, str
         OUTPUT: None
 
@@ -70,7 +69,7 @@ class ReviewSents(object):
             ratings (list): list of customer review ratings for product
             reviews (list): list of customer review text for product
             sentences (list): list of SentCustomProperties objects
-        '''
+        """
         self.data = data
         self.id_field = id_field
         self.text_field = text_field
@@ -106,23 +105,23 @@ class ReviewSents(object):
 
 
 class Unigramer(object):
-    '''
+    """
     Class for extracting Unigrams.
-    '''
+    """
 
     def __init__(self):
-        '''
+        """
         Attribures:
             cnt_dict (dict): {word -> word_freq in all reviews}
             aspect_dict (dict): {aspect -> aspect_freq in all reviews}
             dep_dict (dict): {word -> list(dependency types that corresponds with the word token)}
-            rev_dict (dict): {word -> set(review IDs containg this word)}
+            rev_dict (dict): {word -> set(review IDs containing this word)}
             sent_dict (dict): {word -> list(sentence indices containing this word)}
             word_pos_dict (dict): {word -> list(token index of word within spacy sentences)}
             unigrams (set): set of unigrams obtained with candidate_unigrams function
             n_reviews (int): total number of reviews
             non_aspects (set): a set of words considered as non-aspects
-        '''
+        """
         self.cnt_dict = defaultdict(int)
         self.aspect_dict = defaultdict(int)
         self.dep_dict = defaultdict(list)
@@ -138,13 +137,13 @@ class Unigramer(object):
                 self.non_aspects.add(line.strip())
 
     def _iter_nouns(self, sent: SentCustomProperties):
-        '''
+        """
         INPUT: SentCustomProperties
         OUTPUT: str
 
         Iterates through each token of spacy sentence and collects
         lemmas of all nouns into a set.
-        '''
+        """
 
         wordset = set()
         acomp_dict = defaultdict(list)
@@ -174,26 +173,27 @@ class Unigramer(object):
         return ' '.join(wordset)
 
     def candidate_unigrams(self, corpus: ReviewSents, min_pct=0.001, a_pct=0.09) -> Set[str]:
-        '''
+        """
         INPUT: ReviewSents, float, float
         OUTPUT: set
 
         Args:
+            corpus: corpus represented in ReviewSents object.
             min_pct: percentage of sentences unigram must appear in
             a_pct: minimum percentage where word element has a corresponding 'amod' or 'acomp' dependency
 
         Obtains a set of candidate unigrams.
         Each candidate unigram must be a noun.
-        '''
+        """
 
-        count_X = []
+        count_x = []
         self.n_reviews = corpus.n_reviews
 
         for sent in corpus.sentences:
-            count_X.append(self._iter_nouns(sent))
+            count_x.append(self._iter_nouns(sent))
 
         cnt_vec = CountVectorizer()
-        freq = cnt_vec.fit_transform(count_X)
+        freq = cnt_vec.fit_transform(count_x)
 
         total_count = freq.toarray().sum(axis=0)
 
@@ -214,13 +214,13 @@ class Unigramer(object):
         return unigrams
 
     def update_review_count(self, bigramer, trigramer=None):
-        '''
-        IMPUT: Bigramer, Trigramer
+        """
+        INPUT: Bigramer, Trigramer
         OUTPUT: none
 
         Updates Unigramer rev_dict so that reviews aren't double counted for
         unigram words appearing in bigrams and trigrams.
-        '''
+        """
         update_queue = self.unigrams & bigramer.bigram_words
 
         for unigram in update_queue:
@@ -237,27 +237,27 @@ class Unigramer(object):
 
 
 class Bigramer(object):
-    '''
+    """
     Class for extracting Bigrams.
-    '''
+    """
 
     def __init__(self, unigramer: Unigramer):
-        '''
+        """
         INPUT: unigramer
         OUTPUT: None
 
-        Attribures:
-            avg_dist (dict): {word -> word_freq in all reviews}
+        Attributes:
+            avg_dist (dict): {bigram -> average distance in all reviews}
             distances (dict): {bigram -> list(absolute word spacing difference betweeen words of bigram)}
             ordering (dict): {bigram -> list(which word in bigram appears first in sentence)}
             pmi (dict): {bigram -> float describing Pointwise Mutual Information between words in bigram}
-            rev_dict (dict): {word -> set(review IDs containing this word)}
-            sent_dict (dict): {word -> list(sentence indices containing word)}
-            word_pos_dict (dict): {word -> list(token indices of word within spacy sentence)}
+            rev_dict (dict): {bigram -> set(review IDs containing this word)}
+            sent_dict (dict): {bigram -> list(sentence indices containing word)}
+            word_pos_dict (dict): {bigram -> list(token indices of word within spacy sentence)}
             bigrams (set): set of bigrams obtained with candidate_bigrams function
             bigram_words (set): set of words used in bigrams
             unigramer (Unigramer): Unigramer object for product
-        '''
+        """
         self.avg_dist = defaultdict(float)
         self.distances = defaultdict(list)
         self.ordering = defaultdict(list)
@@ -268,9 +268,14 @@ class Bigramer(object):
         self.bigrams = set()
         self.bigram_words = set()
         self.unigramer = unigramer
+        self.non_aspects = set()
+
+        with open(os.sep.join(['resources', 'nonaspects.txt'])) as fp:
+            for line in fp:
+                self.non_aspects.add(line.strip())
 
     def _reverse_key(self, key, new_key):
-        '''
+        """
         INPUT: str, str
         OUTPUT: None
 
@@ -279,7 +284,7 @@ class Bigramer(object):
             new_key: bigram with words reversed and seperated by space
 
         Reverses the word order for the key in the class dictionaries
-        '''
+        """
         self.avg_dist[new_key] = self.avg_dist.pop(key)
         self.distances[new_key] = self.distances.pop(key)
         self.ordering[new_key] = self.ordering.pop(key)[::-1]
@@ -289,7 +294,7 @@ class Bigramer(object):
         self.word_pos_dict[new_key] = self.word_pos_dict.pop(key)
 
     def _get_compactness_feat(self, corpus: ReviewSents):
-        '''
+        """
         INPUT: ReviewSents
         OUTPUT: generator(tuples(str))
 
@@ -297,15 +302,15 @@ class Bigramer(object):
             at least one noun
             a second word within +/- 3 words of noun
         Excludes dependencies and tags not likely to be a feature word
-        '''
+        """
 
         for sent in corpus.sentences:
             output = set()
 
             for i, token in enumerate(sent.sent):
                 # one word in bigram must be noun
-                if token.tag_ in noun_tag and token.lemma_ not in nonaspects:
-                    arr = sent.sent[max(0, i - 3):min(i + 4, sent.n_words)]
+                if token.tag_ in noun_tag and token.lemma_ not in self.non_aspects:
+                    arr = sent.sent[max(0, i - 1):min(i + 2, sent.n_words)]
                     arr = np.array(arr)
                     arr = arr[arr != token]
 
@@ -314,7 +319,7 @@ class Bigramer(object):
                         # filter out unlikely features
                         if root < -7.5 and (item.dep_ not in com_dep and
                                             item.tag_ not in com_tag and
-                                            item.lemma_ not in nonaspects):
+                                            item.lemma_ not in self.non_aspects):
                             bigrm = ' '.join(sorted([item.lemma_, token.lemma_]))
                             dist = item.i - token.i
                             word_sort = item.lemma_ < token.lemma_
@@ -338,18 +343,19 @@ class Bigramer(object):
                     yield element
 
     def candidate_bigrams(self, corpus: ReviewSents, min_pct=0.005, pmi_pct=0.0003, max_avg_dist=2) -> Set[str]:
-        '''
+        """
         INPUT: ReviewSents, float, float, float
         OUTPUT: set(str)
 
         Args:
+            corpus: corpus represented in ReviewSents object.
             min_pct: percentage of sentences bigram must appear in
             pmi_pct: minimum PMI value for bigram to be considered valid
             max_avg_dist: maximum average word spacing distance for bigram to
                           be considered valud
 
         Outputs set of bigram strings with words in bigram seperated by space
-        '''
+        """
         bigrams, bigram_words = self.bigrams, self.bigram_words
         cnt_dict = self.unigramer.cnt_dict
 
@@ -363,7 +369,7 @@ class Bigramer(object):
             pmi = val / (cnt_dict[order[0]] * cnt_dict[order[1]])
             avg_dist = round(np.mean(self.distances[key]), 2)
 
-            if pmi >= pmi_pct and (avg_dist < max_avg_dist and val >= max(2, min_pct * corpus.n_sent)):
+            if pmi >= pmi_pct and (avg_dist < max_avg_dist and val >= max(2, int(min_pct * corpus.n_sent))):
                 self.avg_dist[key] = avg_dist
                 self.pmi[key] = pmi
 
@@ -376,12 +382,12 @@ class Bigramer(object):
         return bigrams
 
     def pop_bigrams(self, trigramer):
-        '''
-        IMPUT: Trigramer
+        """
+        INPUT: Trigramer
         OUTPUT: none
 
         Remove bigrams if the words appear in a trigram
-        '''
+        """
         bigrams = sorted(list(self.bigrams))
         split_bigrams = [bigram.split(" ") for bigram in bigrams]
 
@@ -389,16 +395,16 @@ class Bigramer(object):
             trigram = trigram.split(" ")
             for bigram, split in zip(bigrams, split_bigrams):
                 if split[0] in trigram and split[1] in trigram:
-                    self.bigrams -= set([bigram])
+                    self.bigrams.remove(bigram)
 
 
 class Trigramer(object):
-    '''
+    """
     Class for extracting trigrams.
-    '''
+    """
 
     def __init__(self, bigramer: Bigramer):
-        '''
+        """
         INPUT: Bigramer
         OUTPUT: None
 
@@ -408,7 +414,7 @@ class Trigramer(object):
             sent_dict (dict): {word -> list(sentence indices containing this word)}
             word_pos_dict (dict): {word -> list(token index of word within spacy sentence)}
             trigrams (set): set of trigrams obtained with candidate_trigrams function
-        '''
+        """
         self.bigramer = bigramer
         self.rev_dict = defaultdict(set)
         self.sent_dict = defaultdict(list)
@@ -416,7 +422,7 @@ class Trigramer(object):
         self.trigrams = set()
 
     def _find_idx(self, corpus, bigram1, bigram2, trigram):
-        '''
+        """
         INPUT: ReviewSents, str, str, str
         OUTPUT: None
 
@@ -427,7 +433,7 @@ class Trigramer(object):
 
         Checks the rev_dict, sent_dict, and word_pos_dict of bigrams in trigram
         to build the same dictionaries for the trigram.
-        '''
+        """
         bgrm_sdict = self.bigramer.sent_dict
         tgrm_sdict = self.sent_dict
         bgrm_wdict = self.bigramer.word_pos_dict
@@ -445,17 +451,18 @@ class Trigramer(object):
         self.rev_dict[trigram] = match_reviews
 
     def candidate_trigrams(self, corpus: ReviewSents, review_pct=0.10) -> set:
-        '''
+        """
         INPUT: ReviewSents, float
         OUTPUT: set(str)
 
         Args:
+            corpus: corpus represented in ReviewSents object.
             review_pct: percentage of reviews two bigrams linked in a trigram
                         must appear together in (relative to the bigram
                         appearing in fewer reviews)
 
         Outputs set of trigram strings with words in trigram seperated by space
-        '''
+        """
         bigrams, trigrams = self.bigramer.bigrams, self.trigrams
         bgrm_rdict = self.bigramer.rev_dict
 
