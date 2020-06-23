@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column
+from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Integer, BigInteger, Boolean, Float, String, Text, Date, DateTime
 
@@ -16,12 +16,12 @@ class BizrateStore(DeclarativeBase):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     store_id = Column(Integer, nullable=False)
-    name = Column(String, nullable=False)
+    name = Column(String(255), nullable=False)
     description = Column(Text)
-    website = Column(String)
+    website = Column(String(1024))
     is_certified = Column(Boolean, default=False)
     award_year = Column(Integer)
-    award_tier = Column(String)
+    award_tier = Column(String(255))
     award_won_years = Column(Integer)
     created_datetime = Column(DateTime, nullable=False)
     
@@ -49,7 +49,6 @@ class BizrateStore(DeclarativeBase):
     after_product_availability = Column(Float)
     after_returns_process = Column(Float)
 
-
     def __repr__(self):
         return '<BizrateStore(store_id={}, name={})>'.format(self.store_id, self.name)
 
@@ -64,7 +63,7 @@ class BizrateReview(DeclarativeBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
     review_id = Column(BigInteger, nullable=False)
     store_id = Column(Integer, nullable=False)
-    author = Column(String)
+    author = Column(String(255))
     before_purchase_publish_date = Column(Date)
     before_purchase_content = Column(Text)
     after_purchase_publish_date = Column(Date)
