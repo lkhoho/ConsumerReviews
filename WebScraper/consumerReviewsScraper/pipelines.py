@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# import re
-# import json
-# import csv
-# import logging
-# from scrapy.utils.serialize import ScrapyJSONEncoder
+from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-from .models.main import db_connect, create_bizrate_tables, create_expedia_tables
-from .models.bizrate import BizrateStore, BizrateReview
-from .models.expedia import ExpediaHotel, ExpediaReview
-from .items.bizrate import BizrateStoreItem, BizrateReviewItem
-from .items.expedia import ExpediaHotelItem, ExpediaReviewItem
+from WebScraper.consumerReviewsScraper.models.main import db_connect, create_bizrate_tables, create_expedia_tables
+from WebScraper.consumerReviewsScraper.models.bizrate import BizrateStore, BizrateReview
+from WebScraper.consumerReviewsScraper.models.expedia import ExpediaHotel, ExpediaReview
+from WebScraper.consumerReviewsScraper.items.bizrate import BizrateStoreItem, BizrateReviewItem
+from WebScraper.consumerReviewsScraper.items.expedia import ExpediaHotelItem, ExpediaReviewItem
 # from .items.kbb import KBBReviewItem
 # from .items.edmunds import EdmundsReviewItem
 # from .items.dianping import DPBadge, DPBonus, DPCommunity, DPMember, DPReview, DPTopic
@@ -30,44 +26,51 @@ class SqlItemPipeline(object):
         self.engine = db_connect()
         create_bizrate_tables(self.engine)
         create_expedia_tables(self.engine)
-        spider.logger.info('Connected to Sqlite file %s' % self.engine.engine.url.database)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+        spider.logger.info('Connected to database %s' % self.engine.engine.url.database)
+        self.session = sessionmaker(bind=self.engine)()
     
     def close_spider(self, spider):
         self.session.close_all()
-        spider.logger.info('Disconnected to Sqlite file %s ' % self.engine.engine.url.database)
+        spider.logger.info('Disconnected to database %s ' % self.engine.engine.url.database)
 
     def process_item(self, item, spider):
         try:
             if isinstance(item, BizrateStoreItem):
                 model = BizrateStore(**item)
-                result = self.session.query(BizrateStore)
-                                     .filter(BizrateStore.store_id == item['store_id'])
+                result = self.session.query(BizrateStore) \
+                                     .filter(BizrateStore.store_id == item['store_id']) \
                                      .one_or_none()
                 if result is None:
                     self.session.add(model)
+                else:
+                    model.created_datetime = datetime.utcnow()
             elif isinstance(item, BizrateReviewItem):
                 model = BizrateReview(**item)
-                result = self.session.query(BizrateReview)
-                                     .filter(BizrateReview.review_id == item['review_id'])
+                result = self.session.query(BizrateReview) \
+                                     .filter(BizrateReview.review_id == item['review_id']) \
                                      .one_or_none()
                 if result is None:
                     self.session.add(model)
+                else:
+                    model.created_datetime = datetime.utcnow()
             elif isinstance(item, ExpediaHotelItem):
                 model = ExpediaHotel(**item)
-                result = self.session.query(ExpediaHotel)
-                                     .filter(ExpediaHotel.hotel_id == item['hotel_id'])
+                result = self.session.query(ExpediaHotel) \
+                                     .filter(ExpediaHotel.hotel_id == item['hotel_id']) \
                                      .one_or_none()
                 if result is None:
                     self.session.add(model)
+                else:
+                    model.created_datetime = datetime.utcnow()
             elif isinstance(item, ExpediaReviewItem):
                 model = ExpediaReview(**item)
-                result = self.session.query(ExpediaReview)
-                                     .filter(ExpediaReview.review_id == item['review_id'])
+                result = self.session.query(ExpediaReview) \
+                                     .filter(ExpediaReview.review_id == item['review_id']) \
                                      .one_or_none()
                 if result is None:
                     self.session.add(model)
+                else:
+                    model.created_datetime = datetime.utcnow()
             else:
                 model = None
 
@@ -156,82 +159,6 @@ class SqlItemPipeline(object):
 #         return item
 
 
-# class TokenizationPipeline(object):
-#     """ Tokenize review item content. """
-
-#     def __init__(self):
-#         self.tokenization_regex = r"[\s()<>[\]{}|,.:;?!&$'\"]"
-
-#     def process_item(self, item, spider):
-#         text = item["content"].lower()
-#         text = re.sub(r"['?,\-\\!\"]", " ", text)
-#         item["content"] = self.tokenize(text)
-#         return item
-
-#     def tokenize(self, text):
-#         tokens = []
-#         words = re.split(self.tokenization_regex, text.lower())
-#         for word in words:
-#             stripped = word.strip()
-#             if len(stripped) > 1:
-#                 tokens.append(stripped)
-#         return tokens
-
-
-# class RemoveStopwordsPipeline(object):
-#     """ Remove stopwords and generate features for review content. """
-
-#     def __init__(self):
-#         self.stopwords_filename = "stopwords.txt"
-#         self.stopwords_fp = None
-#         self.stopwords = set()
-#         self.logger = logging.getLogger(__name__)
-
-#     def open_spider(self, spider):
-#         try:
-#             self.stopwords_fp = open(self.stopwords_filename)
-#         except OSError as exc:
-#             self.logger.error("Error: opening stopwords file {} failed. Exception: {}".format(self.stopwords_filename, exc))
-
-#         for word in self.stopwords_fp:
-#             self.stopwords.add(word)
-
-#         self.stopwords_fp.close()
-
-#     def process_item(self, item, spider):
-#         text = item["content"].lower()
-
-#         # remove comma in numbers
-#         numbers = re.findall(r"\s(\d+[,\d]*\d+)\s?", text)
-#         for number in numbers:
-#             text = text.replace(number, number.replace(",", ""))
-
-#         # remove other commas
-#         text = re.sub(r"['?,\-\\!\"]", " ", text)
-#         word_arr = text.split()
-#         for word in word_arr:
-#             if word in self.stopwords:
-#                 word_arr.remove(word)
-#         item["content"] = " ".join(word_arr)
-#         return item
-
-
-# class StemmingReviewsPipeline(object):
-#     """ Stem features. """
-#
-#     def open_spider(self, spider):
-#         pass
-#
-#     def close_spider(self, spider):
-#         pass
-#
-#     def process_item(self, item, spider):
-#         for i in range(len(item["content"])):
-#             word = item["content"][i]
-#             item["content"][i] = stem(word)
-#         return item
-
-
 # class SaveToMongoDb(object):
 #     """
 #     Persist items into MongoDB as documents.
@@ -269,116 +196,3 @@ class SqlItemPipeline(object):
 #             return item
 #         else:
 #             raise DropItem("Item is already in MongoDB. Will be dropped.")
-
-
-# class SaveRawItemPipeline(object):
-#     """ Save raw items in JSON format. """
-
-#     def __init__(self):
-#         self.items = []
-#         self.fp = None
-#         self.encoder = ScrapyJSONEncoder()
-#         self.logger = logging.getLogger(__name__)
-
-#     def open_spider(self, spider):
-#         filename = spider.name + "_raw.json"
-#         try:
-#             self.fp = open(filename, "a")
-#         except OSError as exc:
-#             self.logger.error("Error: opening JSON file {} failed. Exception: {}".format(filename, exc))
-
-#     def close_spider(self, spider):
-#         json.dump(self.items, self.fp)
-#         self.fp.close()
-
-#     def process_item(self, item, spider):
-#         self.items.append(self.encoder.encode(item))
-#         return item
-
-
-# class SaveToCsvPipeline(object):
-#     """ Export items in CSV format. """
-
-#     def __init__(self):
-#         self.pos_features_fp = None
-#         self.neg_features_fp = None
-#         self.others_fp = None
-#         self.logger = logging.getLogger(__name__)
-
-#     def open_spider(self, spider):
-#         if getattr(spider, "is_pos_neg_separated", False):
-#             pos_features_filename = spider.name + "_features_pos.csv"
-#             neg_features_filename = spider.name + "_features_neg.csv"
-#             try:
-#                 self.pos_features_fp = open(pos_features_filename, "a")
-#             except OSError as exc:
-#                 self.logger.error("Error: opening features file {} failed. Exception: {}".format(pos_features_filename, exc))
-
-#             try:
-#                 self.neg_features_fp = open(neg_features_filename, "a")
-#             except OSError as exc:
-#                 self.logger.error("Error: opening features file {} failed. Exception: {}".format(neg_features_filename, exc))
-#         else:
-#             features_filename = spider.name + "_features.csv"
-#             try:
-#                 self.pos_features_fp = open(features_filename, "a")
-#             except OSError as exc:
-#                 self.logger.error("Error: opening features file {} failed. Exception: {}".format(features_filename, exc))
-
-#         others_filename = spider.name + "_others.csv"
-#         try:
-#             self.others_fp = open(others_filename, "a")
-#             others_writer = csv.writer(self.others_fp, delimiter=",", quoting=csv.QUOTE_ALL)
-
-#             if spider.name.startswith("kbb"):
-#                 others_writer.writerow(KBBReviewItem.get_column_headers())
-#             elif spider.name.startswith("edmunds"):
-#                 others_writer.writerow(EdmundsReviewItem.get_column_headers())
-#         except OSError as exc:
-#             self.logger.error("Error: opening others file {} failed. Exception: {}".format(others_filename, exc))
-
-#     def close_spider(self, spider):
-#         self.pos_features_fp.close()
-
-#         if self.neg_features_fp is not None:
-#             self.neg_features_fp.close()
-
-#         self.others_fp.close()
-
-#     def process_item(self, item, spider):
-#         others_writer = csv.writer(self.others_fp, delimiter=",", quoting=csv.QUOTE_ALL)
-#         if type(item).__name__ == "KBBReviewItem":
-#             others_writer.writerow(item.get_column_values())
-#         elif type(item).__name__ == "EdmundsReviewItem":
-#             others_writer.writerow(item.get_column_values())
-#         elif type(item).__name__ == "OrbitzReviewItem":
-#             others_writer.writerow(item.get_column_values())
-
-#         text = SaveToCsvPipeline.__tokens_to_str(item["content"])
-#         item["content"] = text
-#         if getattr(spider, "is_pos_neg_separated", False):
-#             try:
-#                 if item["will_recommend"] == 1:
-#                     features_writer = csv.writer(self.pos_features_fp, quoting=csv.QUOTE_ALL)
-#                     features_writer.writerow(item["content"].split(","))
-#                 elif item["will_recommend"] == 0:
-#                     features_writer = csv.writer(self.neg_features_fp, quoting=csv.QUOTE_ALL)
-#                     features_writer.writerow(item["content"].split(","))
-#                 else:
-#                     self.logger.error("Error: value of will_recommend attribute is unknown.")
-#             except KeyError:
-#                 self.logger.error("Error: item do not have will_recommend attribute.")
-#         else:
-#             features_writer = csv.writer(self.pos_features_fp, quoting=csv.QUOTE_ALL)
-#             features_writer.writerow(item["content"].split(","))
-#         return item
-
-#     @staticmethod
-#     def __tokens_to_str(tokens):
-#         s = ""
-#         if len(tokens) > 0:
-#             s += tokens[0]
-#             for i in range(1, len(tokens)):
-#                 s += ","
-#                 s += tokens[i]
-#         return s
