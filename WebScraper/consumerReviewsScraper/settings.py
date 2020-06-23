@@ -9,6 +9,7 @@
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 
+import os
 import platform
 
 
@@ -108,15 +109,25 @@ ITEM_PIPELINES = {
 
 # FEED_EXPORT_FIELDS = ["content"]
 
-DB_PROVIDER = 'sqlite'
+DB_PROVIDER = 'mysql'
+DB_NAME = 'consumer_reviews'
 
-if platform.system() == 'Windows':
-    DB_NAME = 'C:\\Users\\lkhoho\\OneDrive\\consumer_reviews.db'
-elif platform.system() == 'Linux':
-    DB_NAME = '/mnt/c/Users/lkhoho/OneDrive/consumer_reviews.db'
-elif platform.system() == 'Darwin':
-    DB_NAME = '/Users/keliu/OneDrive/consumer_reviews.db'
+if DB_PROVIDER == 'mysql':
+    DB_HOST = 'kesnas.local'
+    DB_PORT = 3306
+    DB_USER = os.getenv('mysql_user')
+    DB_PASSWORD = os.getenv('mysql_password')
+    DB_CONN_STR = '{driver}://{user}:{password}@{host}:{port}/{schema}?charset=utf8mb4'.format(
+        driver=DB_PROVIDER, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT, schema=DB_NAME)
+elif DB_PROVIDER == 'sqlite':
+    if platform.system() == 'Windows':
+        DB_FULL_NAME = 'C:\\Users\\lkhoho\\OneDrive\\{}.db'.format(DB_NAME)
+    elif platform.system() == 'Linux':
+        DB_FULL_NAME = '/mnt/c/Users/lkhoho/OneDrive/{}.db'.format(DB_NAME)
+    elif platform.system() == 'Darwin':
+        DB_FULL_NAME = '/Users/keliu/OneDrive/{}.db'.format(DB_NAME)
+    else:
+        raise ValueError('Unsupported platform: ' + platform.system())
+    DB_CONN_STR = '{driver}:///{name}'.format(driver=DB_PROVIDER, name=DB_FULL_NAME)
 else:
-    raise ValueError('Unsupported platform: ' + platform.system())
-
-DB_CONN_STR = '{driver}:///{name}'.format(driver=DB_PROVIDER, name=DB_NAME)
+    raise ValueError('Unsupported database: ' + DB_PROVIDER)
