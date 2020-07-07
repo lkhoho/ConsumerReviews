@@ -11,25 +11,40 @@ from scrapy import signals
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.utils.response import response_status_message
-# from fake_useragent import UserAgent
+from fake_useragent import UserAgent
+from fake_useragent import FakeUserAgentError
 
 
 class RandomUserAgentMiddleware(UserAgentMiddleware):
+    """
+    Try to use cached server (on heroku) for user agent list. If the server is not available, use predefined
+    user agent list instead. Set User-Agent attribute to a random one for every request.
+    """
 
     def __init__(self, user_agent='Scrapy'):
         super().__init__(user_agent=user_agent)
-        # self.user_agent = UserAgent()
-        # self.user_agent.update()
+        try:
+            self.user_agent = UserAgent(cache=False)  # don't use cached database or no writable file system
+        except FakeUserAgentError:
+            self.user_agent = None
 
         # a default user agent list
         self.user_agent_list = [
             'Mozilla/5.0 (X11; Linux i686; rv:58.0) Gecko/20100101 Firefox/58.0',
             'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:58.0) Gecko/20100101 Firefox/58.0',
+            'Mozilla/5.0 (Windows NT 6.1; rv:68.7) Gecko/20100101 Firefox/68.7',
+            'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:69.2.1) Gecko/20100101 Firefox/69.2',
+            'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:77.0) Gecko/20190101 Firefox/77.0',
+            'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:77.0) Gecko/20100101 Firefox/77.0',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:58.0) Gecko/20100101 Firefox/58.0',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.10547',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36 Edge/14.14359',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3739.0 Safari/537.36 Edg/75.0.109.0',
+            'Mozilla/5.0 (X11) AppleWebKit/62.41 (KHTML, like Gecko) Edge/17.10859 Safari/452.6',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19577',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3739.0 Safari/537.36 Edg/75.0.109.0',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13) AppleWebKit/603.1.13 (KHTML, like Gecko) Version/10.1 Safari/603.1.13',
@@ -37,8 +52,10 @@ class RandomUserAgentMiddleware(UserAgentMiddleware):
         ]
 
     def process_request(self, request, spider):
-        ua = choice(self.user_agent_list)
-        request.headers['User-Agent'] = ua
+        if self.user_agent is not None:
+            request.headers['User-Agent'] = self.user_agent.random
+        else:
+            request.headers['User-Agent'] = choice(self.user_agent_list)
 
 
 class TooManyRequestsRetryMiddleware(RetryMiddleware):
@@ -56,7 +73,7 @@ class TooManyRequestsRetryMiddleware(RetryMiddleware):
             return response
         elif response.status == 429:
             self.crawler.engine.pause()
-            time.sleep(self.crawler.settings.getint('CRAWLER_PAUSE_SECONDS', 120))
+            time.sleep(self.crawler.settings.getint('CRAWLER_PAUSE_SECONDS', 60))
             self.crawler.engine.unpause()
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
