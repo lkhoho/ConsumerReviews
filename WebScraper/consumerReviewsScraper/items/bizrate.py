@@ -1,5 +1,6 @@
 import scrapy
 
+
 class BizrateStoreItem(scrapy.Item):
     """
     Stores on bizrate.com.

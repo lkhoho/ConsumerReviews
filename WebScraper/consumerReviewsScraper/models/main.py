@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from .bizrate import BizrateStore, BizrateReview
-from .expedia import ExpediaHotel, ExpediaReview
-from ..settings import DB_CONN_STR
+from WebScraper.consumerReviewsScraper.models.bizrate import BizrateStore, BizrateReview
+from WebScraper.consumerReviewsScraper.models.expedia import ExpediaHotel, ExpediaReview
+from WebScraper.consumerReviewsScraper.settings import DB_CONN_STR
 
 
-# DB_CONN_STR = '{driver}:///{name}'.format(driver='sqlite', name='C:\\Users\\lkhoho\\OneDrive\\consumer_reviews.db')
+# DB_CONN_STR = '{driver}://{user}:{password}@{host}:{port}/{schema}?charset=utf8mb4'.format(
+#     driver='mysql', user='root', password='welcome', host='kesnas.local', port=3306, schema='consumer_reviews')
 
 # base class for all database tables
 DeclarativeBase = declarative_base()
