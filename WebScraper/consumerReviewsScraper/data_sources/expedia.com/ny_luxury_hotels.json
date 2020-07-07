@@ -1,0 +1,184 @@
+{
+    "hotels": [
+        {
+            "name": "Trump International Hotel & Tower New York",
+            "url": "https://www.expedia.com/New-York-Hotels-Trump-International-Hotel-Tower-New-York.h40338.Hotel-Information?chkin=2020-07-15&chkout=2020-07-17&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1591066011217&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a2&selectedRatePlan=204800765&selectedRoomType=200444031&sort=distance&star=50&top_cur=USD&top_dp=398&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Surrey",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Surrey.h132.Hotel-Information?chkin=2020-07-15&chkout=2020-07-17&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1591066011212&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a2&selectedRatePlan=240159042&selectedRoomType=416691&sort=distance&star=50&top_cur=USD&top_dp=470&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Loews Regency New York Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-Loews-Regency-New-York-Hotel.h25559.Hotel-Information?chkin=2020-06-12&chkout=2020-06-13&destType=CURRENT_LOCATION&destination=Lenox%20Hill%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=800076&pwaDialog=reviews&pwa_ts=1592005017846&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=553248635976381371&rfrr=HSR&rm1=a1&selected=25559&sort=RECOMMENDED&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "WestHouse New York",
+            "url": "https://www.expedia.com/New-York-Hotels-WestHouse-New-York.h6467973.Hotel-Information?chkin=2020-07-15&chkout=2020-07-17&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1591066011236&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a2&selectedRatePlan=202124837&selectedRoomType=200348202&sort=distance&star=50&top_cur=USD&top_dp=224&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Knickerbocker Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Knickerbocker-Hotel.h9593707.Hotel-Information?chkin=2020-07-15&chkout=2020-07-17&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1591066011253&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a2&selectedRatePlan=204317839&selectedRoomType=200852613&sort=distance&star=50&top_cur=USD&top_dp=242&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Langham, New York, Fifth Avenue",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Langham.h3629903.Hotel-Information?chkin=2020-07-15&chkout=2020-07-17&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1591066011257&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a2&selectedRatePlan=232008093&selectedRoomType=200682233&sort=distance&star=50&top_cur=USD&top_dp=391&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Royalton Park Avenue",
+            "url": "https://www.expedia.com/New-York-Hotels-Royalton-Park-Avenue.h3572938.Hotel-Information?chkin=2020-07-15&chkout=2020-07-17&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1591066011264&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a2&selectedRatePlan=212164015&selectedRoomType=202377515&sort=distance&star=50&top_cur=USD&top_dp=210&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Gramercy Park Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-Gramercy-Park-Hotel.h20525.Hotel-Information?chkin=2020-07-15&chkout=2020-07-17&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&lodging=hotel&neighborhoodId=129440&pwaDialog=reviews&pwa_ts=1591066011270&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a2&selectedRatePlan=206386554&selectedRoomType=201316429&sort=distance&star=50&top_cur=USD&top_dp=429&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Times Square EDITION",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Times-Square-EDITION.h30039177.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936111953&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=266173231&selectedRoomType=216920195&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=575&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Towers at Lotte New York Palace",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Towers-At-Lotte-New-York-Palace.h4195208.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936111961&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=210125085&selectedRoomType=201179828&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=705&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Park Hyatt New York",
+            "url": "https://www.expedia.com/New-York-Hotels-Park-Hyatt-New-York.h7650971.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936671284&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=252133772&selectedRoomType=201301024&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=945&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Plaza Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Plaza-Hotel.h28044.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936671285&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=206454371&selectedRoomType=201286654&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=611&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Four Seasons Hotel New York",
+            "url": "https://www.expedia.com/New-York-Hotels-Four-Seasons-Hotel-New-York.h14747.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936671288&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=250028378&selectedRoomType=214504595&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=1295&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Four Seasons Hotel New York Downtown",
+            "url": "https://www.expedia.com/New-York-Hotels-Four-Seasons-Hotel-New-York-Downtown.h15438428.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937990&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=208165442&selectedRoomType=201555600&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=1118&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Carlyle, A Rosewood Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Carlyle.h40553.Hotel-Information?chkin=2020-06-12&chkout=2020-06-13&destType=CURRENT_LOCATION&destination=Lenox%20Hill%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=553248635975749261&pwaDialog=reviews&pwa_ts=1592009346086&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=553248635976381371&rfrr=HSR&rm1=a1&selected=40553&sort=RECOMMENDED&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Michelangelo Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Michelangelo-Hotel.h22265.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937983&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=18286&selectedRoomType=18286&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=348&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Pierre, A Taj Hotel, New York",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Pierre.h20213.Hotel-Information?chkin=2020-06-12&chkout=2020-06-13&destType=CURRENT_LOCATION&destination=Lenox%20Hill%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=553248635975749205&pwaDialog=reviews&pwa_ts=1592008591625&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=553248635976381371&rfrr=HSR&rm1=a1&selected=20213&sort=RECOMMENDED&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The NoMad Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-The-NoMad-Hotel.h4758665.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937987&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=206989200&selectedRoomType=201009548&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=572&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Mandarin Oriental, New York",
+            "url": "https://www.expedia.com/New-York-Hotels-Mandarin-Oriental.h916343.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937988&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=238195782&selectedRoomType=212711660&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=1295&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Dominick",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Dominick.h21783007.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937991&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=212242831&selectedRoomType=202402750&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=565&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Hotel Plaza Athenee",
+            "url": "https://www.expedia.com/New-York-Hotels-Hotel-Plaza-Athenee.h17822.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937993&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=206951407&selectedRoomType=178300&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=899&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Quin Central Park by Hilton Club",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Quin-Central-Park-By-Hilton-Club.h856934.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937994&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=256218651&selectedRoomType=215434102&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=349&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Beekman, A Thompson Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Beekman.h12078123.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937995&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=288215622&selectedRoomType=220245704&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=579&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Conrad New York Downtown",
+            "url": "https://www.expedia.com/New-York-Hotels-Conrad-New-York-Downtown.h423480.Hotel-Information?chkin=2020-06-12&chkout=2020-06-13&destType=CURRENT_LOCATION&destination=New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=6227808&pwaDialog=reviews&pwa_ts=1592004958923&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=2621&rfrr=HSR&rm1=a1&selected=423480&sort=RECOMMENDED&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Baccarat Hotel and Residences New York",
+            "url": "https://www.expedia.com/New-York-Hotels-Baccarat-Hotel-And-Residences-New-York.h9759603.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936937998&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=278162333&selectedRoomType=202246797&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=796&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Refinery Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-Refinery-Hotel.h5558022.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936938000&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=201714191&selectedRoomType=200287452&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=386&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "1 Hotel Central Park",
+            "url": "https://www.expedia.com/New-York-Hotels-1-Hotel-Central-Park.h9215515.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936938001&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=280072598&selectedRoomType=201686416&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=374&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Peninsula New York",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Peninsula-New-York.h23855.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936938003&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=242037777&selectedRoomType=201456397&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=633&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "InterContinental - New York Times Square",
+            "url": "https://www.expedia.com/New-York-Hotels-InterContinental-New-York-Times-Square.h3299967.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936938004&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=222219607&selectedRoomType=475770&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=408&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Chatwal, a Luxury Collection Hotel, New York City",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Chatwal.h2277660.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936938005&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=236113534&selectedRoomType=212406554&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=595&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The New York EDITION",
+            "url": "https://www.expedia.com/New-York-Hotels-The-New-York-EDITION.h10231646.Hotel-Information?chkin=2020-11-10&chkout=2020-11-12&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591936938010&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=206251866&selectedRoomType=200986538&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=761&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Ritz-Carlton New York, Central Park",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Ritz-Carlton-New-York.h807655.Hotel-Information?chkin=2020-06-12&chkout=2020-06-13&destType=CURRENT_LOCATION&destination=New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=553248633938969338&pwaDialog=reviews&pwa_ts=1592008526600&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=2621&rfrr=HSR&rm1=a1&selected=807655&sort=RECOMMENDED&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "11 Howard",
+            "url": "https://www.expedia.com/New-York-Hotels-11-Howard.h12503207.Hotel-Information?chkin=2020-06-12&chkout=2020-06-13&destType=CURRENT_LOCATION&destination=New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=6142503&pwaDialog=reviews&pwa_ts=1592006989535&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=2621&rfrr=HSR&rm1=a1&selected=12503207&sort=RECOMMENDED&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Mark",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Mark.h19712.Hotel-Information?chkin=2020-06-12&chkout=2020-06-13&destType=CURRENT_LOCATION&destination=Lenox%20Hill%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=553248635975749261&pwaDialog=reviews&pwa_ts=1592008620833&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=553248635976381371&rfrr=HSR&rm1=a1&selected=19712&sort=RECOMMENDED&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "The Wagner Hotel",
+            "url": "https://www.expedia.com/New-York-Hotels-The-Wagner-Hotel.h23029278.Hotel-Information?chkin=2020-12-08&chkout=2020-12-09&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591937681420&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=288014224&selectedRoomType=220204184&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=415&useRewards=true&x_pwa=1",
+            "status": "done"
+        },
+        {
+            "name": "Royalton Park Avenue",
+            "url": "https://www.expedia.com/New-York-Hotels-Royalton-Park-Avenue.h3572938.Hotel-Information?chkin=2020-12-08&chkout=2020-12-09&destType=MARKET&destination=Manhattan%2C%20New%20York%2C%20New%20York%2C%20United%20States%20of%20America&neighborhoodId=129440&price=4&pwaDialog=reviews&pwa_ts=1591937681464&referrerUrl=aHR0cHM6Ly93d3cuZXhwZWRpYS5jb20vSG90ZWwtU2VhcmNo&regionId=129440&rfrr=HSR&rm1=a1&selectedRatePlan=212164015&selectedRoomType=202377515&sort=PROPERTY_CLASS&star=50&top_cur=USD&top_dp=525&useRewards=true&x_pwa=1",
+            "status": "done"
+        }
+    ]
+}
