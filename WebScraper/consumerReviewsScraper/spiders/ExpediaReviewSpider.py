@@ -11,6 +11,8 @@ class ExpediaReviewSpider(Spider):
     name = 'expedia_hotel_reviews_spider'
 
     custom_settings = {
+        'JOBDIR': os.sep.join(['{}_run'.format(name), datetime.today().strftime('%Y%m%d')]),
+
         'LOG_FILE': '{}.log'.format(name),
 
         # Auto-throttling
@@ -27,6 +29,9 @@ class ExpediaReviewSpider(Spider):
 
             'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
             'consumerReviewsScraper.middlewares.TooManyRequestsRetryMiddleware': 543,
+
+            # 'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+            # 'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
         },
     }
 
@@ -63,20 +68,18 @@ class ExpediaReviewSpider(Spider):
     #     }
     # }
 
-    def start_requests(self):
-        with open(os.sep.join(['data_sources', 'expedia.com', 'ny_luxury_hotels.json'])) as fp:
-            hotel_data = simplejson.load(fp)
-        self.logger.info('%d target URLs to scrape.' % len(hotel_data['hotels']))
-        for hotel in hotel_data['hotels']:
-            if hotel.status == 'done':
-                self.logger.info('URL {} already scraped, skip.'.format(hotel.url))
-                continue
+    def __init__(self, url_file, *args, **kwargs):
+        super(ExpediaReviewSpider, self).__init__(*args, **kwargs)
+        with open(url_file) as fp:
+            self.hotel_data = simplejson.load(fp)
+        self.logger.info('Scraping hotels from file {}. {} target URLs to scrape.'
+                         .format(url_file, len(self.hotel_data['hotels'])))
 
-            hotel_id = re.findall(r'.*\.h(\d+)\..*', hotel.url)[0]
-            # cookies_str = 's_ppv=https%253A%2F%2Fwww.expedia.com%2FTokyo-Hotels-Daiichi-Hotel-Tokyo-Seafort.h54207.Hotel-Information%253Fchkin%253D9%25252F28%25252F2019%2526chkout%253D9%25252F29%25252F2019%2526regionId%253D179165%2526destination%253DShinagawa%25252C%2BTokyo%25252C%2BJapan%2526swpToggleOn%253Dtrue%2526rm1%253Da2%2526x_pwa%253D1%2526price%253D0%25252C300%2526sort%253Drecommended%2526lodging%253Dryoken%2526top_dp%253D154%2526top_cur%253DUSD%2526rfrr%253DHSR%2526pwa_ts%253D1569187236031%2C76%2C11%2C9670%2C1817%2C1329%2C2560%2C1440%2C1%2CP; im_snid=218b3ae6-9483-40a2-a299-15be9658d5fe; intent_media_prefs=; _ga=GA1.2.1987570637.1566711464; _gcl_au=1.1.1400176059.1566711466; _gid=GA1.2.1658107351.1569111229; s_ppvl=https%253A%2F%2Fwww.expedia.com%2FTokyo-Hotels-Daiichi-Hotel-Tokyo-Seafort.h54207.Hotel-Information%253Fchkin%253D9%25252F28%25252F2019%2526chkout%253D9%25252F29%25252F2019%2526regionId%253D179165%2526destination%253DShinagawa%25252C%2BTokyo%25252C%2BJapan%2526swpToggleOn%253Dtrue%2526rm1%253Da2%2526x_pwa%253D1%2526price%253D0%25252C300%2526sort%253Drecommended%2526lodging%253Dryoken%2526top_dp%253D154%2526top_cur%253DUSD%2526rfrr%253DHSR%2526pwa_ts%253D1569187236031%2C11%2C11%2C1329%2C1817%2C1329%2C2560%2C1440%2C1%2CP; HMS=5869e9df-9fde-4bf3-9fe1-514c1e2a57ab; utag_main=v_id:016cc747baad00202ab6ff91d52401077001806f00838$_sn:6$_ss:1$_st:1569209282810$ses_id:1569207482810%3Bexp-session$_pn:1%3Bexp-session; AMCV_C00802BE5330A8350A490D4C%40AdobeOrg=1406116232%7CMCIDTS%7C18162%7CMCMID%7C31160316888969874832212038078424992583%7CMCAAMLH-1569812281%7C9%7CMCAAMB-1569812281%7CRKhpRz8krg2tLO6pguXWp5olkAcUniQYPHaMWWgdJ3xzPWQmdj0y%7CMCOPTOUT-1569214681s%7CNONE%7CMCAID%7CNONE%7CvVersion%7C2.5.0; accttype=v.2,8,1,EX01313DA2A31$F8$0D$5C$83$A1n$82$9B$1D$E4C$D57$E7$2E$E4$13$90$CF$1B$9Dv$F2Jq$F2$8F$15$B6Q$82; cesc=%7B%22marketingClick%22%3A%5B%22false%22%2C1569207481206%5D%2C%22hitNumber%22%3A%5B%222%22%2C1569207481206%5D%2C%22visitNumber%22%3A%5B%226%22%2C1569207476842%5D%2C%22entryPage%22%3A%5B%22page.Hotels.Infosite.Information%22%2C1569207481206%5D%2C%22cid%22%3A%5B%22Brand.DTI%22%2C1566711458123%5D%7D; currency=USD; linfo=v.4,|0|0|255|1|0||||||||1033|0|0||0|0|0|-1|-1; minfo=v.5,EX012CE7CFD51$F8$0D$5C$9E$A1n!2$9B$1A$E4I$D51$E7$2E$E0$10$90$CF$1E$9Dv$F2J$7C$F2$80$1F$B6m$82$EB$DA$DF$B4wu$CC$83$E6$F7$E4$A2$F9q$E8$8A$AD$C3$B4$C5$CA$F9H$A0y$B3$B8S$FBK; s_cc=true; JSESSIONID=E0745E6433B9B513DD3B171202D77C22; x-CGP-exp-15795=2; x-CGP-exp-28702=0; x-CGP-exp-30353=3; s_ppn=page.Hotels.Infosite.Information; ak_bmsc=7ACDDF94046748D616665E71B323E4B21724025E65310000B434885D2BCD8A45~plravG6WC0jY3RwvKTEB42qG7PjqR+E/5CAZfDY0h5f1t8blMx2ik/Su4AUO/zrk3TeTuqc/IHHkWRz8oWPwwm4nZ3YfnEYOKUT578rc2sBgTklaecGHzmjrQg47HW97AlP7BDUVui0pacISUDNj0LvyWEqwXgvT1PDbFvGaKQ1Lf734c5vuh+3Xzjsq3+h0WCefUoYmZ6DzR5s+b8isthFnlef0NC0Yz7E1G1P1E7k9M=; pwa_csrf=0465e163-ba20-4396-91ea-95235164a013|aWYqXfr0mLyGo88Z4vG1xwlKSu5a0gxXv-WuQnOdr_59FR3ekNs2cj3a_cScP4Vl6Xsd9wufR4TuwZH-8wIPqQ; __gads=ID=7353435ca3b8ecb5:T=1566711464:RT=1569198472:S=ALNI_MY-zgBsfpIoNyUKhpCpNIXu4nTprA; AMCVS_C00802BE5330A8350A490D4C%40AdobeOrg=1; iEAPID=0; _fbp=fb.1.1566711467999.1560575220; _tq_id.TV-721872-1.7ec4=21e10b98037947c8.1566711467.0.1569111229..; CONSENTMGR=ts:1569111222574%7Cconsent:true; rlt_marketing_code_cookie=; tpid=v.1,1; _ctpuid=7401134c-532a-437a-a5d8-bb71695abf37; x-cgp-exp=27461.79023.pwa; 0e16e784-167b-49ee-b1ac-0ff7866eb4fbfaktorChecksum=1074992617; IM_xu_2_freq_cap=Y; 0e16e784-167b-49ee-b1ac-0ff7866eb4fbcconsent=BOl1TLCOl1TLCADABAENAiAAAAAKOAAA; 0e16e784-167b-49ee-b1ac-0ff7866eb4fbeuconsent=BOl1TLCOl1TLCADABAENCi-AAAAp6AGAAUAA0AEAANAAigBM; lastConsentChange=1566711469042; 0e16e784-167b-49ee-b1ac-0ff7866eb4fbfaktorId=518ed4ea-f59f-43fc-aa7f-7773f177d43f; xdid=22ca708b-ce53-47fa-8d71-d835f278f876|1566711462|orbitz.com; AB_Test_TripAdvisor=A; s_ecid=MCMID%7C31160316888969874832212038078424992583; DUAID=e2775f0f-e36e-40fc-9d33-0459fdb1de00; MC1=GUID=e2775f0fe36e40fc9d330459fdb1de00; eid=111714606; s_fid=7A97AE8CE804BC6A-2FEC44C0972FA802; aspp=v.1,0|||||||||||||'
-            # cookies = self._parse_cookie_str(cookies_str)
-            # self.logger.info('Cookies=%s' % cookies)
-            yield Request(url=hotel.url, callback=self.parse_hotel, meta={'hotel_id': hotel_id},
+    def start_requests(self):
+        for hotel in self.hotel_data['hotels']:
+            hotel_id = re.findall(r'.*\.h(\d+)\..*', hotel['url'])[0]
+            self.logger.info('Prepare to scrapy hotel {}. URL={}'.format(hotel['name'], hotel['url']))
+            yield Request(url=hotel['url'], callback=self.parse_hotel, meta={'hotel_id': hotel_id}, dont_filter=True,
                           headers={
                               'Host': 'www.expedia.com',
                               'Connection': 'keep-alive',
@@ -99,7 +102,8 @@ class ExpediaReviewSpider(Spider):
         self.logger.info('Parsing hotel={}, hotelID={}, reviewCount={}'.format(hotel_name, hotel_id, num_reviews))
 
         try:
-            hotel_intro = response.xpath("//p[@class='uitk-type-paragraph-300 all-b-padding-three']/text()").get().strip()
+            hotel_intro = response.xpath(
+                "//p[@class='uitk-type-paragraph-300 all-b-padding-three']/text()").get().strip()
         except:
             self.logger.warn('Parsing hotel introduction failed. Response={}'.format(response))
             hotel_intro = None
@@ -136,7 +140,7 @@ class ExpediaReviewSpider(Spider):
                         'type': 'DESKTOP'
                     },
                     'identity': {
-                        'duaid': 'f33ca170-948c-4f0b-aace-a3c2610e39b6', 
+                        'duaid': '7f144b66-04b9-4684-abbb-b4a57f3c8aa9',
                         'expUserId': '-1',
                         'tuid': '-1',
                         'authState': 'ANONYMOUS',
@@ -173,9 +177,9 @@ class ExpediaReviewSpider(Spider):
                               'Origin': 'https://www.expedia.com',
                               'Referer': response.url,
                               'client-info': 'shopping-pwa,unknown,unknown',
-                              'Credentials': 'same-origin',
-                              'device-user-agent-id': 'f33ca170-948c-4f0b-aace-a3c2610e39b6',
-                              'Cookie': 'tpid=v.1,1; iEAPID=0; currency=USD; linfo=v.4,|0|0|255|1|0||||||||1033|0|0||0|0|0|-1|-1; pwa_csrf=efd11704-1def-4d71-8d44-186683e22fb3|d_jAcA70pK4_8YDEppUSe7sva4kHdyoPkRQuUM9iktjvYHixKWtFvxO7WCtRxPaKzkRnjuvE-6khTmySZGnWoQ; HMS=7dc36c21-2783-4d7e-ae1f-ce80948307c6; MC1=GUID=f33ca170948c4f0baacea3c2610e39b6; DUAID=f33ca170-948c-4f0b-aace-a3c2610e39b6; ak_bmsc=6E1300C39B2E64AF52CF5F9B258CE61917202E6DF773000055CAD55E4D4DDF0E~plfm/Ay7JYL6szb7ZLd7VpvYtj6apH2/nVNOz4SXI/+evKm+xPxrzbI9aVFTFzCcsCuGXbCC0vzWLOvk2LZR4pDx9UqtD1NWAgqu9BBMt3jpVXdh/BiWMFfTQxij27jruiX/6VkGjyND4A1joh4XzV08XlZd+ZZAXYf6QHXZT+e/RJdr+5AuQaYCiNDhYCjqydL9apXr01PpcB4AmxsnjEo3A9RZzOBO67cL6bPSCA/w0=; s_ppn=page.Hotels.Infosite.Information; CRQS=t|1`s|1`l|en_US`c|USD; CRQSS=e|0; qualtrics_SI_sample=true; qualtrics_sample=true; s_ecid=MCMID%7C18732679269843130691363451466864564195; AMCVS_C00802BE5330A8350A490D4C%40AdobeOrg=1; AMCV_C00802BE5330A8350A490D4C%40AdobeOrg=1406116232%7CMCIDTS%7C18416%7CMCMID%7C18732679269843130691363451466864564195%7CMCAID%7CNONE%7CMCOPTOUT-1591076471s%7CNONE%7CMCAAMLH-1591674071%7C9%7CMCAAMB-1591674071%7Cj8Odv6LonN4r3an7LhD3WZrU1bUpAkFkkiY1ncBR96t2PTI%7CvVersion%7C2.5.0; s_cc=true; _gcl_au=1.1.664679863.1591069272; _ga=GA1.2.1982571180.1591069272; _gid=GA1.2.1202334584.1591069272; _fbp=fb.1.1591069272269.634213574; lastConsentChange=1591069273650; QSI_HistorySession=; xdid=5d259994-c5c8-4fdb-8928-d31cd01bd665|1591069274|expedia.com; JSESSIONID=80C389FA707C8B6DB32066C980974FC5; utag_main=v_id:0172731e6603001562bc1fefec210308201f807a00c98$_sn:1$_ss:0$_st:1591071136038$ses_id:1591069271557%3Bexp-session$_pn:2%3Bexp-session; cesc=%7B%22marketingClick%22%3A%5B%22false%22%2C1591069336631%5D%2C%22hitNumber%22%3A%5B%226%22%2C1591069336631%5D%2C%22visitNumber%22%3A%5B%221%22%2C1591069269100%5D%2C%22entryPage%22%3A%5B%22page.Hotels.Infosite.Information%22%2C1591069336631%5D%7D; _gat_gtag_UA_35711341_2=1; s_ppvl=page.Hotels.Infosite.Information%2C10%2C10%2C1050%2C1155%2C1050%2C2048%2C1152%2C1.25%2CP; s_ppv=page.Hotels.Infosite.Information%2C10%2C10%2C1050%2C1155%2C1050%2C2048%2C1152%2C1.25%2CP',
+                              'credentials': 'same-origin',
+                              'device-user-agent-id': '7f144b66-04b9-4684-abbb-b4a57f3c8aa9',
+                              'cookie': 'tpid=v.1,1; iEAPID=0; currency=USD; linfo=v.4,|0|0|255|1|0||||||||1033|0|0||0|0|0|-1|-1; NavActions=acctWasOpened; pwa_csrf=fcc6de5c-e8cc-4112-8c97-d4a6ecb86af1|XOZgVxqdxwQmwXfyblQzZQXVfwf4y-qetGLtzYGgrjs1FkYtgqW9wb0o6rNRZW6Fuc2WxCtQsT3xfxABjNlSAg; HMS=c401a9f1-a298-4662-a447-7536c67e0952; MC1=GUID=7f144b6604b94684abbbb4a57f3c8aa9; DUAID=7f144b66-04b9-4684-abbb-b4a57f3c8aa9; ak_bmsc=B7D2B9E7B4D2EB80B74EA5D708C0FA0E17202E4E7551000093B2285F24D6C041~plrZJiGsXFYN32DuLq19r/aWmi2/j2u+8jOSj8stx2xzcPeTFHt3+NoqSAXcUGNH+oMG+dRYZNMJPOksYJyyBeqZBH8Q1nAjzqhXaR/UznVnippXgaRhW5fmEn1aL5ffLqDd5wpw58Ppdr9fnnzFdHE9st+0PpOD7CFFvKhCHkYYlumKhfKgRYkyJAAi/VGSePKRs7DDMAcoKDQCK6abps4hyPGbpew82GEKC2SIA8fMw=; s_ppn=page.Hotels.Infosite.Information; CRQS=t|1`s|1`l|en_US`c|USD; CRQSS=e|0; utag_main=v_id:0173b6f9a24000123c87d0ad374d03082016b07a00c98$_sn:1$_ss:1$_st:1596504480130$ses_id:1596502680130%3Bexp-session$_pn:1%3Bexp-session; qualtrics_sample=true; qualtrics_SI_sample=true; s_ecid=MCMID%7C44196179068162063302142817747933649501; AMCVS_C00802BE5330A8350A490D4C%40AdobeOrg=1; s_cc=true; _fbp=fb.1.1596502681668.1610379039; _gcl_au=1.1.468526097.1596502682; _ga=GA1.2.513821263.1596502682; _gid=GA1.2.634208041.1596502682; _gat_gtag_UA_35711341_2=1; xdid=ebcc5d2e-10f7-4668-b64b-b74bb32bf69a|1596502684|expedia.com; lastConsentChange=1596502688725; s_ppvl=https%253A%2F%2Fwww.expedia.com%2FSan-Francisco-Hotels-Adante-Hotel.h789395.Hotel-Information%253Fchkin%253D8%25252F1%25252F2020%2526chkout%253D8%25252F2%25252F2020%2526rm1%253Da1%2526lodging%253Dhotel%25252Cmotel%25252Cinn%25252Chostel%2526star%253D30%2526sort%253DstarRating%2526hwrqCacheKey%253D7b6972e0-b873-4022-83e3-c69bae2ecce9HWRQ1596296706596%2526cancellable%253Dfalse%2526regionId%253D6151902%2526vip%253Dfalse%2526regionFilter%253D6151902%2526c%253D836eb991-6f88-4561-bf98-2203e3a1c820%2526%2C100%2C100%2C6582%2C1172%2C1050%2C2048%2C1152%2C1.25%2CP; s_ppv=page.Hotels.Infosite.Information%2C17%2C17%2C1050%2C1172%2C1050%2C2048%2C1152%2C1.25%2CP; JSESSIONID=469415FC09BAEC850E1487C2844F6F4D; cesc=%7B%22marketingClick%22%3A%5B%22false%22%2C1596502696572%5D%2C%22hitNumber%22%3A%5B%226%22%2C1596502696572%5D%2C%22visitNumber%22%3A%5B%221%22%2C1596502675624%5D%2C%22entryPage%22%3A%5B%22page.Hotels.Infosite.Information%22%2C1596502696572%5D%7D; AMCV_C00802BE5330A8350A490D4C%40AdobeOrg=1406116232%7CMCIDTS%7C18479%7CMCMID%7C44196179068162063302142817747933649501%7CMCAID%7CNONE%7CMCOPTOUT-1596509880s%7CNONE%7CMCAAMLH-1597107498%7C9%7CMCAAMB-1597107498%7Cj8Odv6LonN4r3an7LhD3WZrU1bUpAkFkkiY1ncBR96t2PTI%7CMCCIDH%7C-2034012538%7CvVersion%7C2.5.0; user=; minfo=; accttype=',
                           },
                           meta={
                               'hotel_name': hotel_name,
@@ -206,7 +210,7 @@ class ExpediaReviewSpider(Spider):
         #                           'num_reviews': num_reviews,
         #                           'start_index': start_index
         #                       })
-        
+
     def parse_graphql(self, response):
         hotel_name = response.meta['hotel_name']
         hotel_id = response.meta['hotel_id']
@@ -219,7 +223,7 @@ class ExpediaReviewSpider(Spider):
         if json.get('data', None) is None:
             self.logger.warn('Cannot get review data from GraphQL response. Response is %s' % json)
             return
-        
+
         for review in json['data']['propertyInfo']['reviewInfo']['reviews']:
             item = ExpediaReviewItem(
                 review_id=review['id'],
@@ -238,15 +242,18 @@ class ExpediaReviewSpider(Spider):
                 remarks_negative=review['negativeRemarks'],
                 remarks_location=review['locationRemarks'],
                 hotel_id=hotel_id)
+
             if len(review['managementResponses']) > 0:
                 mgmt_resp = review['managementResponses'][0]
                 item['response_id'] = mgmt_resp['id']
                 item['response_author'] = mgmt_resp['userNickname']
                 try:
-                    item['response_publish_datetime'] = datetime.strptime(mgmt_resp['date'].strip(), '%Y-%m-%dT%H:%M:%SZ')
+                    item['response_publish_datetime'] = datetime.strptime(mgmt_resp['date'].strip(),
+                                                                          '%Y-%m-%dT%H:%M:%SZ')
                 except ValueError:
-                    self.logger.warn('Parsing publish datetime for response failed. Value={}. ItemURL={}'.format(mgmt_resp['date'].strip(), response.url))
-                    item['response_publish_datetime'] = None    
+                    self.logger.warn('Parsing publish datetime for response failed. Value={}. ItemURL={}'
+                                     .format(mgmt_resp['date'].strip(), response.url))
+                    item['response_publish_datetime'] = None
                 item['response_content'] = mgmt_resp['response']
                 item['response_display_locale'] = mgmt_resp['displayLocale']
             else:
@@ -256,10 +263,3 @@ class ExpediaReviewSpider(Spider):
                 item['response_content'] = None
                 item['response_display_locale'] = None
             yield item
-
-    # def _parse_cookie_str(self, cookie_str: str) -> dict:
-    #     cookies = {}
-    #     for kv_pair in cookie_str.split(';'):
-    #         kv = kv_pair.strip().split('=')
-    #         cookies[kv[0]] = kv[1]
-    #     return cookies

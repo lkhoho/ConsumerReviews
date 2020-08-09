@@ -11,8 +11,6 @@ from scrapy import signals
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.utils.response import response_status_message
-from fake_useragent import UserAgent
-from fake_useragent import FakeUserAgentError
 
 
 class RandomUserAgentMiddleware(UserAgentMiddleware):
@@ -23,12 +21,7 @@ class RandomUserAgentMiddleware(UserAgentMiddleware):
 
     def __init__(self, user_agent='Scrapy'):
         super().__init__(user_agent=user_agent)
-        try:
-            self.user_agent = UserAgent(cache=False)  # don't use cached database or no writable file system
-        except FakeUserAgentError:
-            self.user_agent = None
 
-        # a default user agent list
         self.user_agent_list = [
             'Mozilla/5.0 (X11; Linux i686; rv:58.0) Gecko/20100101 Firefox/58.0',
             'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:58.0) Gecko/20100101 Firefox/58.0',
@@ -52,10 +45,7 @@ class RandomUserAgentMiddleware(UserAgentMiddleware):
         ]
 
     def process_request(self, request, spider):
-        if self.user_agent is not None:
-            request.headers['User-Agent'] = self.user_agent.random
-        else:
-            request.headers['User-Agent'] = choice(self.user_agent_list)
+        request.headers['User-Agent'] = choice(self.user_agent_list)
 
 
 class TooManyRequestsRetryMiddleware(RetryMiddleware):

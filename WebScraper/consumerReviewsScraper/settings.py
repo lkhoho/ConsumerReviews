@@ -69,6 +69,9 @@ ROBOTSTXT_OBEY = False  # some website does not allow scrape user page
 #    'scrapy.extensions.telnet.TelnetConsole': None,
 # }
 
+# Rotating proxies
+ROTATING_PROXY_LIST_PATH = 'proxies.txt'
+
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
