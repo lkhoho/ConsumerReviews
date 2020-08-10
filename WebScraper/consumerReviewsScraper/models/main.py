@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
+from scrapy.utils.project import get_project_settings
 from WebScraper.consumerReviewsScraper.models.bizrate import BizrateStore, BizrateReview
 from WebScraper.consumerReviewsScraper.models.expedia import ExpediaHotel, ExpediaReview
 from WebScraper.consumerReviewsScraper.settings import DB_CONN_STR

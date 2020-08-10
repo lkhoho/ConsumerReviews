@@ -1,9 +1,12 @@
 import re
 import os
 import simplejson
+from collections import defaultdict
 from datetime import datetime
+from scrapy import signals
 from scrapy.spiders import Spider
 from scrapy.http import Request
+from scrapy.utils.request import request_fingerprint
 from WebScraper.consumerReviewsScraper.items.expedia import ExpediaHotelItem, ExpediaReviewItem
 
 
@@ -68,6 +71,8 @@ class ExpediaReviewSpider(Spider):
     #     }
     # }
 
+    request_status = defaultdict(str)
+
     def __init__(self, url_file, *args, **kwargs):
         super(ExpediaReviewSpider, self).__init__(*args, **kwargs)
         with open(url_file) as fp:
@@ -75,17 +80,43 @@ class ExpediaReviewSpider(Spider):
         self.logger.info('Scraping hotels from file {}. {} target URLs to scrape.'
                          .format(url_file, len(self.hotel_data['hotels'])))
 
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
+        return spider
+
+    def spider_closed(self, spider):
+        spider.logger.info('Spider closed: %s.', spider.name)
+        if 'JOBDIR' in self.custom_settings:
+            path = self.custom_settings['JOBDIR']
+            spider.logger.info('Updating request seen file...')
+            seen = set()
+            with open(os.path.join(path, 'requests.seen')) as file:
+                for line in file:
+                    seen.add(line.rstrip())
+            for fp, s in self.request_status.items():
+                if fp in seen and s != 'S':
+                    seen.remove(fp)
+            with open(os.path.join(path, 'request.seen'), 'w') as file:
+                for fp in seen:
+                    file.write('{}\n'.format(fp))
+            spider.logger.info('Finished updating request seen file.')
+
     def start_requests(self):
         for hotel in self.hotel_data['hotels']:
             hotel_id = re.findall(r'.*\.h(\d+)\..*', hotel['url'])[0]
             self.logger.info('Prepare to scrapy hotel {}. URL={}'.format(hotel['name'], hotel['url']))
-            yield Request(url=hotel['url'], callback=self.parse_hotel, meta={'hotel_id': hotel_id}, dont_filter=True,
+            req = Request(url=hotel['url'], callback=self.parse_hotel, meta={'hotel_id': hotel_id}, dont_filter=True,
                           headers={
                               'Host': 'www.expedia.com',
                               'Connection': 'keep-alive',
                               'Accept-Language': 'en-us',
                               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
                           })
+            fp = self._set_request_fingerprint_and_status(req, 'P')
+            req.meta['fp'] = fp
+            yield req
 
     def parse_hotel(self, response):
         hotel_id = response.meta['hotel_id']
@@ -120,7 +151,7 @@ class ExpediaReviewSpider(Spider):
             self.logger.warn('Parsing hotel around-info failed. Response={}'.format(response))
             around = None
 
-        yield ExpediaHotelItem(
+        item = ExpediaHotelItem(
             hotel_id=hotel_id,
             name=hotel_name,
             nearby_info=simplejson.dumps(nearby),
@@ -128,6 +159,8 @@ class ExpediaReviewSpider(Spider):
             introduction=hotel_intro,
             created_datetime=datetime.utcnow()
         )
+        self.request_status[response.meta['fp']] = 'S'
+        yield item
 
         graphql_payload = {
             'operationName': 'Reviews',
@@ -170,7 +203,7 @@ class ExpediaReviewSpider(Spider):
             graphql_payload['variables']['pagination']['startingIndex'] = start_index
             graphql_payload['variables']['filters']['tripReason'] = []
             graphql_payload['variables']['filters']['travelCompanion'] = []
-            yield Request(url='https://www.expedia.com/graphql', callback=self.parse_graphql, method='POST',
+            req = Request(url='https://www.expedia.com/graphql', callback=self.parse_graphql, method='POST',
                           body=simplejson.dumps(graphql_payload),
                           headers={
                               'Content-Type': 'application/json',
@@ -187,6 +220,8 @@ class ExpediaReviewSpider(Spider):
                               'num_reviews': num_reviews,
                               'start_index': start_index
                           })
+            fp = self._set_request_fingerprint_and_status(req, 'P')
+            req.meta['fp'] = fp
 
         # get specific category - this may override items scraped in default category
         # for start_index in range(0, num_reviews, self.num_reviews_per_request):
@@ -262,4 +297,10 @@ class ExpediaReviewSpider(Spider):
                 item['response_publish_datetime'] = None
                 item['response_content'] = None
                 item['response_display_locale'] = None
+            self.request_status['fp'] = response.meta['fp']
             yield item
+
+    def _set_request_fingerprint_and_status(self, request, status='P') -> str:
+        fp = request_fingerprint(request)
+        self.request_status[fp] = status
+        return fp
