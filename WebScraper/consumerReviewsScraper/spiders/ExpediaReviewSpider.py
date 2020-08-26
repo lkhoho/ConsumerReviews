@@ -1,9 +1,6 @@
 import re
-import os
 import simplejson
-from collections import defaultdict
 from datetime import datetime
-from scrapy import signals
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.utils.request import request_fingerprint
@@ -14,8 +11,6 @@ class ExpediaReviewSpider(Spider):
     name = 'expedia_hotel_reviews_spider'
 
     custom_settings = {
-        'JOBDIR': os.sep.join(['{}_run'.format(name), datetime.today().strftime('%Y%m%d')]),
-
         'LOG_FILE': '{}.log'.format(name),
 
         # Auto-throttling
@@ -35,6 +30,10 @@ class ExpediaReviewSpider(Spider):
 
             # 'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
             # 'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
+        },
+
+        'SPIDER_MIDDLEWARES': {
+            'consumerReviewsScraper.middlewares.UpdateURLStatusMiddleware': 10,
         },
     }
 
@@ -71,37 +70,12 @@ class ExpediaReviewSpider(Spider):
     #     }
     # }
 
-    request_status = defaultdict(str)
-
     def __init__(self, url_file, *args, **kwargs):
         super(ExpediaReviewSpider, self).__init__(*args, **kwargs)
         with open(url_file) as fp:
             self.hotel_data = simplejson.load(fp)
         self.logger.info('Scraping hotels from file {}. {} target URLs to scrape.'
                          .format(url_file, len(self.hotel_data['hotels'])))
-
-    @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super().from_crawler(crawler, *args, **kwargs)
-        crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
-        return spider
-
-    def spider_closed(self, spider):
-        spider.logger.info('Spider closed: %s.', spider.name)
-        if 'JOBDIR' in self.custom_settings:
-            path = self.custom_settings['JOBDIR']
-            spider.logger.info('Updating request seen file...')
-            seen = set()
-            with open(os.path.join(path, 'requests.seen')) as file:
-                for line in file:
-                    seen.add(line.rstrip())
-            for fp, s in self.request_status.items():
-                if fp in seen and s != 'S':
-                    seen.remove(fp)
-            with open(os.path.join(path, 'request.seen'), 'w') as file:
-                for fp in seen:
-                    file.write('{}\n'.format(fp))
-            spider.logger.info('Finished updating request seen file.')
 
     def start_requests(self):
         for hotel in self.hotel_data['hotels']:
@@ -114,8 +88,7 @@ class ExpediaReviewSpider(Spider):
                               'Accept-Language': 'en-us',
                               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
                           })
-            fp = self._set_request_fingerprint_and_status(req, 'P')
-            req.meta['fp'] = fp
+            req.meta['fp'] = request_fingerprint(req)
             yield req
 
     def parse_hotel(self, response):
@@ -159,7 +132,6 @@ class ExpediaReviewSpider(Spider):
             introduction=hotel_intro,
             created_datetime=datetime.utcnow()
         )
-        self.request_status[response.meta['fp']] = 'S'
         yield item
 
         graphql_payload = {
@@ -220,8 +192,8 @@ class ExpediaReviewSpider(Spider):
                               'num_reviews': num_reviews,
                               'start_index': start_index
                           })
-            fp = self._set_request_fingerprint_and_status(req, 'P')
-            req.meta['fp'] = fp
+            req.meta['fp'] = request_fingerprint(req)
+            yield req
 
         # get specific category - this may override items scraped in default category
         # for start_index in range(0, num_reviews, self.num_reviews_per_request):
@@ -297,10 +269,4 @@ class ExpediaReviewSpider(Spider):
                 item['response_publish_datetime'] = None
                 item['response_content'] = None
                 item['response_display_locale'] = None
-            self.request_status['fp'] = response.meta['fp']
             yield item
-
-    def _set_request_fingerprint_and_status(self, request, status='P') -> str:
-        fp = request_fingerprint(request)
-        self.request_status[fp] = status
-        return fp

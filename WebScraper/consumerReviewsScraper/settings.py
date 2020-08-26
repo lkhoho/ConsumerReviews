@@ -18,8 +18,10 @@ SPIDER_MODULES = ['consumerReviewsScraper.spiders']
 NEWSPIDER_MODULE = 'consumerReviewsScraper.spiders'
 
 LOG_LEVEL = 'INFO'
-# LOG_FILE = 'ConsumerReviewsScrapy.log'
 LOG_DATEFORMAT = '%Y%m%d %H:%M:%S'
+
+# custom de-dupe filter class
+DUPEFILTER_CLASS = 'WebScraper.core_customized.RFPDupeFilterWithStatus'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # USER_AGENT = 'scrapy_reviews (+http://www.yourdomain.com)'

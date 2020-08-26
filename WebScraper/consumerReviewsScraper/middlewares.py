@@ -6,11 +6,21 @@
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 import time
+import logging
+from datetime import datetime
 from random import choice
 from scrapy import signals
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
+from scrapy.exceptions import NotConfigured
+from scrapy.http import Request
+from scrapy.utils.request import request_fingerprint
 from scrapy.utils.response import response_status_message
+from sqlalchemy.orm import sessionmaker
+from urllib.parse import urlparse
+from WebScraper.consumerReviewsScraper.models.main import db_connect
+from WebScraper.consumerReviewsScraper.models.url_status import URLStatus
+from WebScraper.core_customized import SUCCESS, FAILED, PENDING
 
 
 class RandomUserAgentMiddleware(UserAgentMiddleware):
@@ -73,32 +83,53 @@ class TooManyRequestsRetryMiddleware(RetryMiddleware):
         return response
 
 
-class WebscraperSpiderMiddleware(object):
+class UpdateURLStatusMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
 
+    def __init__(self, settings):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.info('Using customized de-duple class %s' % settings.get('DUPEFILTER_CLASS'))
+        self.engine = None
+        self.session = None
+
     @classmethod
     def from_crawler(cls, crawler):
-        # This method is used by Scrapy to create your spiders.
-        s = cls()
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
-        return s
+        if crawler.settings.get('DUPEFILTER_CLASS', None) is None:
+            raise NotConfigured
+        mw = cls(crawler.settings)
+        crawler.signals.connect(mw.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(mw.spider_closed, signal=signals.spider_closed)
+        return mw
 
     def process_spider_input(self, response, spider):
-        # Called for each response that goes through the spider
-        # middleware and into the spider.
-
-        # Should return None or raise an exception.
-        return None
+        fp = response.meta.get('fp', None)
+        if fp is None:
+            self.logger.warning('Cannot get fingerprint from response. URLStatus will not be updated.')
+        else:
+            if response.status >= 400:
+                self._upsert_fingerprint_and_status(fp, None, FAILED)
+            elif 300 <= response.status < 400:
+                self._upsert_fingerprint_and_status(fp, None, PENDING)
+        return
 
     def process_spider_output(self, response, result, spider):
         # Called with the results returned from the Spider, after
         # it has processed the response.
 
         # Must return an iterable of Request, dict or Item objects.
-        for i in result:
-            yield i
+        for r in result:
+            if isinstance(r, Request):
+                fp = r.meta.get('fp', None)
+                self._upsert_fingerprint_and_status(fp, r, PENDING)
+            else:
+                fp = response.meta.get('fp', None)
+                if fp is None:
+                    self.logger.warning('Cannot get fingerprint from response. URLStatus will not be updated.')
+                # update URLStatus to SUCCESS only when we have the item
+                self._upsert_fingerprint_and_status(fp, None, SUCCESS)
+            yield r
 
     def process_spider_exception(self, response, exception, spider):
         # Called when a spider or process_spider_input() method
@@ -115,10 +146,44 @@ class WebscraperSpiderMiddleware(object):
 
         # Must return only requests (not items).
         for r in start_requests:
+            fp = r.meta.get('fp', None)
+            # always update URLStatus of start_requests to PENDING, no matter they have succeeded or not.
+            self._upsert_fingerprint_and_status(fp, r, PENDING, force=True)
             yield r
 
     def spider_opened(self, spider):
-        spider.logger.info('Spider opened: %s' % spider.name)
+        self.logger.debug('Spider {} opened.'.format(spider.name))
+        self.engine = db_connect()
+        self.session = sessionmaker(bind=self.engine)()
+        self.logger.info('Connected to database %s' % self.engine.engine.url.database)
+
+    def spider_closed(self, spider):
+        self.logger.debug('Spider {} closed.'.format(spider.name))
+        self.session.close_all()
+        self.logger.info('Disconnected to database %s ' % self.engine.engine.url.database)
+
+    def _upsert_fingerprint_and_status(self, fingerprint, request, status, force=False) -> str:
+        if fingerprint is not None:
+            fp = fingerprint
+        else:
+            fp = request_fingerprint(request)
+
+        url_status = self.session.query(URLStatus).filter_by(fingerprint=fp).one_or_none()
+        if url_status is None:
+            url_status = URLStatus(domain=self.get_domain(request), fingerprint=fp, status=PENDING,
+                                   last_update_datetime=datetime.utcnow())
+            self.session.add(url_status)
+        elif url_status.status != SUCCESS or force is True:
+            url_status.status = status
+            url_status.last_update_datetime = datetime.utcnow()
+            url_status.fingerprint = fp
+        self.session.commit()
+        return fp
+
+    def get_domain(self, request):
+        parsed_uri = urlparse(request.url)
+        domain = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+        return domain
 
 
 class WebscraperDownloaderMiddleware(object):

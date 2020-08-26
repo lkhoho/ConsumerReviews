@@ -1,10 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from scrapy.utils.project import get_project_settings
 from WebScraper.consumerReviewsScraper.models.bizrate import BizrateStore, BizrateReview
 from WebScraper.consumerReviewsScraper.models.expedia import ExpediaHotel, ExpediaReview
+from WebScraper.consumerReviewsScraper.models.url_status import URLStatus
 from WebScraper.consumerReviewsScraper.settings import DB_CONN_STR
-
 
 # DB_CONN_STR = '{driver}://{user}:{password}@{host}:{port}/{schema}?charset=utf8mb4'.format(
 #     driver='mysql', user='root', password='welcome', host='kesnas.local', port=3306, schema='consumer_reviews')
@@ -47,3 +46,11 @@ def create_expedia_tables(engine):
 
     ExpediaHotel.metadata.create_all(engine)
     ExpediaReview.metadata.create_all(engine)
+
+
+def create_url_status_table(engine):
+    """
+    Create URLStatus table.
+    """
+
+    URLStatus.metadata.create_all(engine)
