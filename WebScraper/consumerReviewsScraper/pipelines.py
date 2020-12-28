@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import logging
 from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-from WebScraper.consumerReviewsScraper.models.main import db_connect, create_bizrate_tables, create_expedia_tables
+from WebScraper.consumerReviewsScraper.models.main \
+    import db_connect, create_bizrate_tables, create_expedia_tables, create_steam_tables, create_url_status_table
 from WebScraper.consumerReviewsScraper.models.bizrate import BizrateStore, BizrateReview
 from WebScraper.consumerReviewsScraper.models.expedia import ExpediaHotel, ExpediaReview
+from WebScraper.consumerReviewsScraper.models.steam import SteamUserProfile
 from WebScraper.consumerReviewsScraper.items.bizrate import BizrateStoreItem, BizrateReviewItem
 from WebScraper.consumerReviewsScraper.items.expedia import ExpediaHotelItem, ExpediaReviewItem
+from WebScraper.consumerReviewsScraper.items.steam import SteamUserProfileItem
 # from .items.kbb import KBBReviewItem
 # from .items.edmunds import EdmundsReviewItem
 # from .items.dianping import DPBadge, DPBonus, DPCommunity, DPMember, DPReview, DPTopic
@@ -21,53 +25,73 @@ class SqlItemPipeline(object):
     def __init__(self):
         self.engine = None
         self.session = None
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(logging.INFO)
 
     def open_spider(self, spider):
         self.engine = db_connect()
         create_bizrate_tables(self.engine)
         create_expedia_tables(self.engine)
-        spider.logger.info('Connected to database %s' % self.engine.engine.url.database)
+        create_steam_tables(self.engine)
+        create_url_status_table(self.engine)
+        self.logger.info('Connected to database %s' % self.engine.engine.url.database)
         self.session = sessionmaker(bind=self.engine)()
     
     def close_spider(self, spider):
         self.session.close_all()
-        spider.logger.info('Disconnected to database %s ' % self.engine.engine.url.database)
+        self.logger.info('Disconnected to database %s ' % self.engine.engine.url.database)
 
     def process_item(self, item, spider):
         try:
+            model = None
             if isinstance(item, BizrateStoreItem):
-                model = BizrateStore(**item)
-                result = self.session.query(BizrateStore) \
+                model = self.session.query(BizrateStore) \
                                      .filter(BizrateStore.store_id == item['store_id']) \
                                      .one_or_none()
-                if result is None:
+                if model is None:
+                    model = BizrateStore(**item)
                     self.session.add(model)
                 else:
                     model.created_datetime = datetime.utcnow()
             elif isinstance(item, BizrateReviewItem):
-                model = BizrateReview(**item)
-                result = self.session.query(BizrateReview) \
+                model = self.session.query(BizrateReview) \
                                      .filter(BizrateReview.review_id == item['review_id']) \
                                      .one_or_none()
-                if result is None:
+                if model is None:
+                    model = BizrateReview(**item)
                     self.session.add(model)
                 else:
                     model.created_datetime = datetime.utcnow()
             elif isinstance(item, ExpediaHotelItem):
-                model = ExpediaHotel(**item)
-                result = self.session.query(ExpediaHotel) \
+                model = self.session.query(ExpediaHotel) \
                                      .filter(ExpediaHotel.hotel_id == item['hotel_id']) \
                                      .one_or_none()
-                if result is None:
+                if model is None:
+                    model = ExpediaHotel(**item)
                     self.session.add(model)
                 else:
                     model.created_datetime = datetime.utcnow()
             elif isinstance(item, ExpediaReviewItem):
-                model = ExpediaReview(**item)
-                result = self.session.query(ExpediaReview) \
+                model = self.session.query(ExpediaReview) \
                                      .filter(ExpediaReview.review_id == item['review_id']) \
                                      .one_or_none()
-                if result is None:
+                if model is None:
+                    model = ExpediaReview(**item)
+                    self.session.add(model)
+                else:
+                    model.created_datetime = datetime.utcnow()
+            elif isinstance(item, SteamUserProfileItem):
+                if item['user_id'] is not None:
+                    model = self.session.query(SteamUserProfile) \
+                                 .filter(SteamUserProfile.user_id == item['user_id']) \
+                                 .one_or_none()
+                elif item['profile_id'] is not None:
+                    model = self.session.query(SteamUserProfile) \
+                                 .filter(SteamUserProfile.profile_id == item['profile_id']) \
+                                 .one_or_none()
+
+                if model is None:
+                    model = SteamUserProfile(**item)
                     self.session.add(model)
                 else:
                     model.created_datetime = datetime.utcnow()
@@ -77,8 +101,8 @@ class SqlItemPipeline(object):
             self.session.commit()
         except SQLAlchemyError as err:
             self.session.rollback()
-            spider.logger.warn('Failed to save item to database. Item={}'.format(item))
-            spider.logger.error(str(err))
+            self.logger.warn('Failed to save item to database. Item={}'.format(item))
+            self.logger.error(str(err))
         
         return item
 

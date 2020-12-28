@@ -20,6 +20,9 @@ class BizrateStoreItem(scrapy.Item):
     overall_satisfaction = scrapy.Field()
     shop_again = scrapy.Field()
     to_recommend = scrapy.Field()
+    pos_overall_satisfaction = scrapy.Field()
+    pos_shop_again = scrapy.Field()
+    pos_to_recommend = scrapy.Field()
     
     # site and shopping experience ratings
     exp_ease_to_find = scrapy.Field()
@@ -57,6 +60,9 @@ class BizrateReviewItem(scrapy.Item):
     shop_again = scrapy.Field()
     to_recommend = scrapy.Field()
     created_datetime = scrapy.Field()
+    pos_overall_satisfaction = scrapy.Field()
+    pos_shop_again = scrapy.Field()
+    pos_to_recommend = scrapy.Field()
     
     # site and shopping experience ratings
     exp_ease_to_find = scrapy.Field()

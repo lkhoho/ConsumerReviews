@@ -36,18 +36,10 @@ class RFPDupeFilterWithStatus(BaseDupeFilter):
     def request_seen(self, request):
         fp = self.request_fingerprint(request)
         url_status = self.session.query(URLStatus).filter_by(fingerprint=fp).one_or_none()
-        if url_status is not None:
-            if url_status.status == SUCCESS:
-                return True
-            else:
-                url_status.status = PENDING
-                url_status.last_update_datetime = datetime.utcnow()
+        if url_status is not None and url_status.status == SUCCESS:
+            return True
         else:
-            url_status = URLStatus(fingerprint=fp, domain=self.get_domain(request), status=PENDING,
-                                   last_update_datetime=datetime.utcnow())
-            self.session.add(url_status)
-        self.session.commit()
-        return False
+            return False
 
     def request_fingerprint(self, request):
         return request_fingerprint(request)

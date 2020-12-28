@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from WebScraper.consumerReviewsScraper.models.bizrate import BizrateStore, BizrateReview
 from WebScraper.consumerReviewsScraper.models.expedia import ExpediaHotel, ExpediaReview
+from WebScraper.consumerReviewsScraper.models.steam import SteamUserProfile
 from WebScraper.consumerReviewsScraper.models.url_status import URLStatus
 from WebScraper.consumerReviewsScraper.settings import DB_CONN_STR
 
@@ -46,6 +47,14 @@ def create_expedia_tables(engine):
 
     ExpediaHotel.metadata.create_all(engine)
     ExpediaReview.metadata.create_all(engine)
+
+
+def create_steam_tables(engine):
+    """
+    Create Steam-related tables.
+    """
+
+    SteamUserProfile.metadata.create_all(engine)
 
 
 def create_url_status_table(engine):

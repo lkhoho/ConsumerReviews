@@ -1,4 +1,4 @@
-from sqlalchemy import Column
+from sqlalchemy import Index, Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Integer, BigInteger, Boolean, Float, String, Text, Date, DateTime
 
@@ -29,7 +29,10 @@ class BizrateStore(DeclarativeBase):
     overall_satisfaction = Column(Float)
     shop_again = Column(Float)
     to_recommend = Column(Float)
-    
+    pos_overall_satisfaction = Column(Float)
+    pos_shop_again = Column(Float)
+    pos_to_recommend = Column(Float)
+
     # site and shopping experience ratings
     exp_ease_to_find = Column(Float)
     exp_site_design = Column(Float)
@@ -48,6 +51,10 @@ class BizrateStore(DeclarativeBase):
     after_customer_support = Column(Float)
     after_product_availability = Column(Float)
     after_returns_process = Column(Float)
+
+    __table_args__ = (
+        Index('uidx__bizrate_store__store_id', 'store_id', unique=True),
+    )
 
     def __repr__(self):
         return '<BizrateStore(store_id={}, name={})>'.format(self.store_id, self.name)
@@ -71,6 +78,9 @@ class BizrateReview(DeclarativeBase):
     overall_satisfaction = Column(Integer)
     shop_again = Column(Integer)
     to_recommend = Column(Integer)
+    pos_overall_satisfaction = Column(Integer)
+    pos_shop_again = Column(Integer)
+    pos_to_recommend = Column(Integer)
     created_datetime = Column(DateTime, nullable=False)
     
     # site and shopping experience ratings
@@ -91,6 +101,10 @@ class BizrateReview(DeclarativeBase):
     after_customer_support = Column(Integer)
     after_product_availability = Column(Integer)
     after_returns_process = Column(Integer)
+
+    __table_args__ = (
+        Index('uidx__bizrate_review__review_id', 'review_id', unique=True),
+    )
 
     def __repr__(self):
         return '<BizrateReview(review_id={}, store_id={})>'.format(self.review_id, self.store_id)
