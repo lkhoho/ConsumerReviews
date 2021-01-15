@@ -1,0 +1,73 @@
+{
+  "todo_stores": [
+    {
+      "name": "ACE Hardware",
+      "url": "https://bizratesurveys.com/reviews/www.acehardware.com/59712/index--0"
+    },
+    {
+      "name": "Advance Auto Parts",
+      "url": "https://bizratesurveys.com/reviews/www.advanceautoparts.com/27470/index--0"
+    },
+    {
+      "name": "Bath & Body Works",
+      "url": "https://bizratesurveys.com/reviews/www.bathandbodyworks.com/120325/index--0"
+    },
+    {
+      "name": "Carparts.com",
+      "url": "https://bizratesurveys.com/reviews/www.carparts.com/23773/index--0"
+    },
+    {
+      "name": "Clinique",
+      "url": "https://bizratesurveys.com/reviews/www.clinique.com/22612/index--0"
+    },
+    {
+      "name": "Elf Cosmetics",
+      "url": "https://bizratesurveys.com/reviews/www.elfcosmetics.com/184713/index--0"
+    },
+    {
+      "name": "Journeys",
+      "url": "https://bizratesurveys.com/reviews/www.journeys.com/23679/index--0"
+    },
+    {
+      "name": "MidwayUSA",
+      "url": "https://bizratesurveys.com/reviews/www.MidwayUSA.com/77064/index--0"
+    },
+    {
+      "name": "MAC",
+      "url": "https://bizratesurveys.com/reviews/maccosmetics.com/27533/index--0"
+    },
+    {
+      "name": "PetSmart",
+      "url": "https://bizratesurveys.com/reviews/www.petsmart.com/23777/index--0"
+    },
+    {
+      "name": "Tarte Cosmetics",
+      "url": "https://bizratesurveys.com/reviews/tartecosmetics.com/226975/index--0",
+      "notes": "online only"
+    },
+    {
+      "name": "Victoria's Secret",
+      "url": "https://bizratesurveys.com/reviews/www.victoriassecret.com/17330/index--0"
+    },
+    {
+      "name": "Venus",
+      "url": "https://bizratesurveys.com/reviews/www.venus.com/200581/index--0",
+      "notes": "online women clothing, lingerie, swimming"
+    },
+    {
+      "name": "YankeeCandle",
+      "url": "https://bizratesurveys.com/reviews/www.yankeecandle.com/138631/index--0"
+    },
+    {
+      "name": "zZounds",
+      "url": "https://bizratesurveys.com/reviews/www.zZounds.com/18022/index--0",
+      "notes": "audio video equipment"
+    }
+  ],
+  "collected_stores": [
+    {
+      "name": "Overstock",
+      "url": "https://bizratesurveys.com/reviews/www.overstock.com/23819/index--0"
+    }
+  ]
+}

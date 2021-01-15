@@ -1,6 +1,5 @@
 import re
 import os
-import yaml
 import json
 from datetime import datetime
 from typing import Optional
@@ -42,15 +41,16 @@ class BizrateReviewSpider(Spider):
     }
 
     def start_requests(self):
-        with open(os.sep.join(['data_sources', 'bizrate.com', 'stores.yaml'])) as fp:
-            data_source = yaml.full_load(fp)
+        with open(os.sep.join(['data_sources', 'bizrate.com', 'stores.json'])) as fp:
+            data_source = json.load(fp)
 
-        for url in data_source['old_stores']:
-            req = Request(url=url, callback=self.parse_store)
+        for store in data_source['todo_stores']:
+            req = Request(url=store['url'], callback=self.parse_store)
             req.meta['fp'] = request_fingerprint(req)
             yield req
 
-        for url in data_source['old_stores']:
+        for store in data_source['todo_stores']:
+            url = store['url']
             match = re.match(r'http.*/index--(\d+)', url)
             review_start = int(match[1])
             req = Request(url=url, callback=self.parse_reviews, meta={'review_start': review_start})
@@ -219,7 +219,7 @@ class BizrateReviewSpider(Spider):
             with open('C:/Users/lkhoho/OneDrive/Desktop/pageerror.txt', 'w+') as fp:
                 fp.write(page_data)
                 fp.write('--------\n')
-        
+
         return page_data
 
     def _str2int(self, val: str) -> Optional[int]:
