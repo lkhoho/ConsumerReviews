@@ -70,7 +70,7 @@ class BizrateReview(DeclarativeBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
     review_id = Column(BigInteger, nullable=False)
     store_id = Column(Integer, nullable=False)
-    author = Column(String(255))
+    author = Column(String(511))
     before_purchase_publish_date = Column(Date)
     before_purchase_content = Column(Text)
     after_purchase_publish_date = Column(Date)

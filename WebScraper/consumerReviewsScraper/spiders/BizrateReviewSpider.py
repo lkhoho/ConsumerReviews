@@ -25,7 +25,7 @@ class BizrateReviewSpider(Spider):
 
         # Retry
         'CRAWLER_PAUSE_SECONDS': 60,
-        'RETRY_HTTP_CODES': [429],
+        'RETRY_HTTP_CODES': [429, 504],
 
         'DOWNLOADER_MIDDLEWARES': {
             'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
@@ -112,7 +112,7 @@ class BizrateReviewSpider(Spider):
                 match = re.match(r'(http.*/\d+)', response.url)
                 store_url = match[1]
                 url = store_url + '/' + str(review_id)
-                req = Request(url=url, callback=self.parse_review_details, meta={'review_id': review_id})
+                req = Request(url=url, callback=self.parse_review_details)
                 req.meta['fp'] = request_fingerprint(req)
                 yield req
 
@@ -129,9 +129,10 @@ class BizrateReviewSpider(Spider):
 
     def parse_review_details(self, response):
         self.logger.info('Parsing review details: ' + response.url)
+        match = re.match(r'http.*/(\d+)/(\d+)', response.url)
+        store_id = match[1]
+        review_id = match[2]
         page_data = self._parse_page_data(response)
-        review_id = response.meta['review_id']
-        store_id = page_data['merchant']['mid']
         rating = page_data['rating']
         review = page_data['review']
 
