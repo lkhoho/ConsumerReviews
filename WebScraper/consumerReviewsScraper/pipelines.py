@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime
+from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from WebScraper.consumerReviewsScraper.models.main \
@@ -9,9 +10,11 @@ from WebScraper.consumerReviewsScraper.models.main \
 from WebScraper.consumerReviewsScraper.models.bizrate import BizrateStore, BizrateReview
 from WebScraper.consumerReviewsScraper.models.expedia import ExpediaHotel, ExpediaReview
 from WebScraper.consumerReviewsScraper.models.steam import SteamUserProfile
+from WebScraper.consumerReviewsScraper.models.university import University, UniversityRanking
 from WebScraper.consumerReviewsScraper.items.bizrate import BizrateStoreItem, BizrateReviewItem
 from WebScraper.consumerReviewsScraper.items.expedia import ExpediaHotelItem, ExpediaReviewItem
 from WebScraper.consumerReviewsScraper.items.steam import SteamUserProfileItem
+from WebScraper.consumerReviewsScraper.items.university import UniversityRankingItem
 # from .items.kbb import KBBReviewItem
 # from .items.edmunds import EdmundsReviewItem
 # from .items.dianping import DPBadge, DPBonus, DPCommunity, DPMember, DPReview, DPTopic
@@ -82,17 +85,47 @@ class SqlItemPipeline(object):
                     model.created_datetime = datetime.utcnow()
             elif isinstance(item, SteamUserProfileItem):
                 if item['user_id'] is not None:
-                    model = self.session.query(SteamUserProfile) \
-                                 .filter(SteamUserProfile.user_id == item['user_id']) \
-                                 .one_or_none()
+                    model = self.session.query(SteamUserProfile)\
+                                .filter(SteamUserProfile.user_id == item['user_id'])\
+                                .one_or_none()
                 elif item['profile_id'] is not None:
-                    model = self.session.query(SteamUserProfile) \
-                                 .filter(SteamUserProfile.profile_id == item['profile_id']) \
-                                 .one_or_none()
+                    model = self.session.query(SteamUserProfile)\
+                                .filter(SteamUserProfile.profile_id == item['profile_id'])\
+                                .one_or_none()
 
                 if model is None:
                     model = SteamUserProfile(**item)
                     self.session.add(model)
+                else:
+                    model.created_datetime = datetime.utcnow()
+            elif isinstance(item, UniversityRankingItem):
+                model = self.session.query(University)\
+                            .filter(University.name == item['name'])\
+                            .one_or_none()
+                if model is None:
+                    uni = University(name=item['name'],
+                                     country=item['country'],
+                                     region=item['region'],
+                                     created_datetime=item['created_datetime'])
+                    self.session.add(uni)
+                    self.session.commit()
+                    university_pid = uni.pid
+                else:
+                    university_pid = model.pid
+                    model.created_datetime = datetime.utcnow()
+                model = self.session.query(UniversityRanking)\
+                            .filter(and_(UniversityRanking.university_id == university_pid,
+                                         UniversityRanking.subject == item['subject'],
+                                         UniversityRanking.year == item['year']))\
+                            .one_or_none()
+                if model is None:
+                    rank = UniversityRanking(subject=item['subject'],
+                                             year=item['year'],
+                                             ranking=item['ranking'],
+                                             score=item['score'],
+                                             university_id=university_pid,
+                                             created_datetime=item['created_datetime'])
+                    self.session.add(rank)
                 else:
                     model.created_datetime = datetime.utcnow()
             else:
