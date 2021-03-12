@@ -84,14 +84,15 @@ if __name__ == '__main__':
 
     if args.journal_file is not None:
         print('Journal file: {}'.format(args.journal_file))
-        with open(args.journal_file) as fp:
+        with open(os.sep.join([args.working_dir, args.journal_file])) as fp:
             journals = [x.strip().lower() for x in fp]
     elif args.journal_list is not None:
         print('Journal list: {}'.format(args.journal_list))
         journals = [x.strip().lower() for x in args.journal_list.split(',')]
     else:
         sys.exit('Both journal file and list are not provided. Abort.')
-    print('# of journals to collect: {}'.format(len(journals)))
+    num_journals = len(journals)
+    print('# of journals to collect: {}'.format(num_journals))
 
     attrs_str = '\n'
     attrs = args.attrs.split(',')
@@ -118,12 +119,13 @@ if __name__ == '__main__':
 
     field_names = [ID, JOURNAL, TITLE, AUTHORS, PUBLISH_YEAR, ABSTRACT, CITATION]
     fp = open(os.sep.join([args.working_dir, args.output_file]), 'w', newline='', encoding='utf-8')
-    fpe = open(os.sep.join([args.working_dir, 'errors.json']), 'w', encoding='utf-8')
     writer = csv.DictWriter(fp, fieldnames=field_names)
     writer.writeheader()
 
     incorrect_data = []
+    c = 0
     for jou in journals:
+        c += 1
         offset = 0
         while True:
             payload['offset'] = offset
@@ -136,7 +138,7 @@ if __name__ == '__main__':
             offset += args.batch_size
 
             if len(data['entities']) == 0:
-                print('Journal [{}] finished.'.format(jou))
+                print('Journal [{}] finished ({}/{}).'.format(jou, c, num_journals))
                 break
 
             for ent in data['entities']:
@@ -161,7 +163,10 @@ if __name__ == '__main__':
                         exc_obj, exc_type, filename, line_number))
                     incorrect_data.append(ent)
 
-    json.dump(incorrect_data, fpe)
+    if len(incorrect_data > 0):
+        fpe = open(os.sep.join([args.working_dir, 'errors.json']), 'w', encoding='utf-8')
+        json.dump(incorrect_data, fpe)
+        fpe.close()
+
     fp.close()
-    fpe.close()
     print('Done!')
