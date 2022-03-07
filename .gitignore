@@ -1,5 +1,7 @@
-*.pyc
-*.log
+**/*.pyc
+**/*.log
 .idea
 .vscode
 .vs
+**/.DS_Store
+**/Thumbs.db
