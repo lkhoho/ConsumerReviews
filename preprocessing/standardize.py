@@ -96,6 +96,23 @@ def standardize_text(df: pd.DataFrame, text_field: str, output_field: str) -> pd
     return df
 
 
+def filter_text_length(dataframe: pd.DataFrame, 
+                        column: str, 
+                        min_length: int, 
+                        max_length: int = None) -> pd.DataFrame:
+    """
+    Remove rows whose `text_field` do not meet given length requirement. 
+    """
+    print(f'Before cleaning, dataframe shape={dataframe.shape}')
+    dataframe[column] = dataframe[column].apply(lambda text: text.strip())
+    if min_length is not None:
+        dataframe = dataframe[dataframe[column].str.len() >= min_length]
+    if max_length is not None:
+        dataframe = dataframe[dataframe[column].str.len() <= max_length]
+    print(f'After cleaning, dataframe shape={dataframe.shape}')
+    return dataframe
+
+
 if __name__ == '__main__':
     args = parse_cli()
     print('Working directory: {}'.format(args.working_dir))
@@ -107,8 +124,13 @@ if __name__ == '__main__':
     df = pd.read_csv(os.sep.join([args.working_dir, args.data_file]))
     print('Dataframe shape={}'.format(df.shape))
 
+    df[args.text_field] = df[args.text_field].astype(str)
+    df = filter_text_length(df, column=args.text_field, min_length=5)
+
     df = standardize_text(df, text_field=args.text_field, output_field=args.output_field)
     print('Standardized shape={}'.format(df.shape))
+
+    df = filter_text_length(df, column=args.output_field, min_length=1)
 
     filename = os.path.splitext(args.data_file)[0] + '__std.csv'
     print('Output file: {}'.format(filename))
