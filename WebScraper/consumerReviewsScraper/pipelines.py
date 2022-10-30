@@ -140,7 +140,7 @@ class SqlItemPipeline(object):
         return item
 
 
-# class SaveExpediaItemsPipeline(object):
+# class CsvItemsPipeline(object):
 #     """ Save hotel reviews of expedia.com to Sqlite 3. """
 
 #     def __init__(self):

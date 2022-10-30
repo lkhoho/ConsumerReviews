@@ -21,7 +21,7 @@ LOG_LEVEL = 'INFO'
 LOG_DATEFORMAT = '%Y%m%d %H:%M:%S'
 
 # custom de-dupe filter class
-DUPEFILTER_CLASS = 'WebScraper.core_customized.RFPDupeFilterWithStatus'
+# DUPEFILTER_CLASS = 'WebScraper.core_customized.RFPDupeFilterWithStatus'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # USER_AGENT = 'scrapy_reviews (+http://www.yourdomain.com)'
@@ -77,7 +77,7 @@ ROTATING_PROXY_LIST_PATH = 'proxies.txt'
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'consumerReviewsScraper.pipelines.SqlItemPipeline': 100,
+    # 'consumerReviewsScraper.pipelines.SqlItemPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveExpediaItemsPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveHyoubanItemsPipeline': 100,
     # 'consumerReviewsScraper.pipelines.SaveXcarItemsPipeline': 100,

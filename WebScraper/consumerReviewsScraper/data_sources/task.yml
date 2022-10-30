@@ -1,0 +1,20 @@
+Id: 7cc1351a-b939-11ec-8422-0242ac120002
+Name: "Expedia reviews after COVID'19 pandemic"
+Description: "Hotel reviews after COVID'19 pandemic on expedia.com"
+Date: 2022-04-10  # ISO-8601 format: yyyy-MM-dd
+Hotels:
+  -
+    Id: 7611
+    Name: "Bally's"
+    URL: "https://www.expedia.com/Las-Vegas-Hotels-Ballys-Las-Vegas-Hotel-Casino.h7611.Hotel-Information"
+    MaxReviews: 50000
+  -
+    Id: 1443
+    Name: "The Venetian Resort Las Vegas"
+    URL: "https://www.expedia.com/Las-Vegas-Hotels-The-Venetian-Resort-Las-Vegas.h1443.Hotel-Information"
+    MaxReviews: 50000
+  -
+    Id: 15930
+    Name: "Treasure Island Hotel & Casino"
+    URL: "https://www.expedia.com/Las-Vegas-Hotels-TI-Treasure-Island-Hotel-And-Casino.h15930.Hotel-Information"
+    MaxReviews: 50000
